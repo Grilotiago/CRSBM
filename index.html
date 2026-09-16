@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu com Submenu Interativo</title>
+  
+  <style>
+    /* Estilos Gerais */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f4f4f9;
+    }
+
+    /* Estilo do Cabeçalho e Nav */
+    header {
+      background-color: #1e293b;
+      color: white;
+      padding: 0.8rem 2rem;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Container do Logo (Imagem + Texto) */
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-img {
+      height: 45px;
+      width: auto;
+      display: block;
+    }
+
+    .logo-text {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+
+    /* Lista Principal do Menu */
+    .nav-menu {
+      display: flex;
+      list-style: none;
+      gap: 1rem;
+    }
+
+    .nav-item {
+      position: relative; /* Necessário para posicionar o submenu */
+    }
+
+    .nav-link {
+      color: #f8fafc;
+      text-decoration: none;
+      font-size: 1rem;
+      padding: 0.6rem 1rem;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background-color 0.3s, color 0.3s;
+      cursor: pointer;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      background-color: #38bdf8;
+      color: #0f172a;
+    }
+
+    /* Seta indicadora de Submenu */
+    .arrow {
+      font-size: 0.7rem;
+      transition: transform 0.3s;
+    }
+
+    /* ESTILOS DO SUBMENU (DROPDOWN) */
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background-color: #0f172a;
+      list-style: none;
+      min-width: 220px;
+      border-radius: 6px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      z-index: 1000;
+      overflow: hidden;
+    }
+
+    /* Classe ativada via JS ou Hover para mostrar o submenu */
+    .nav-item.dropdown-open .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .nav-item.dropdown-open .arrow {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-link {
+      display: block;
+      padding: 0.7rem 1.2rem;
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .dropdown-link:hover {
+      background-color: #38bdf8;
+      color: #0f172a;
+    }
+
+    /* Botão Hambúrguer (Mobile) */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+      gap: 5px;
+    }
+
+    .bar {
+      width: 25px;
+      height: 3px;
+      background-color: white;
+      transition: all 0.3s ease;
+    }
+
+    /* Responsividade (Celulares e Tablets) */
+    @media (max-width: 768px) {
+      .hamburger {
+        display: flex;
+      }
+
+      .nav-menu {
+        position: absolute;
+        left: -100%;
+        top: 65px;
+        flex-direction: column;
+        background-color: #1e293b;
+        width: 100%;
+        transition: 0.3s;
+        padding: 1rem 0;
+        box-shadow: 0 10px 10px rgba(0,0,0,0.1);
+        gap: 0;
+      }
+
+      .nav-menu.open {
+        left: 0;
+      }
+
+      /* No mobile o submenu abre expandindo para baixo */
+      .dropdown-menu {
+        position: static;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        max-height: 0;
+        box-shadow: none;
+        background-color: #0f172a;
+        transition: max-height 0.3s ease-out;
+      }
+
+      .nav-item.dropdown-open .dropdown-menu {
+        max-height: 300px; /* Limite de altura para expansão */
+      }
+
+      .dropdown-link {
+        padding-left: 2.5rem; /* Indentação para destacar opções filhas */
+      }
+
+      /* Animação do botão Hambúrguer */
+      .hamburger.active .bar:nth-child(2) { opacity: 0; }
+      .hamburger.active .bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+      .hamburger.active .bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Estrutura HTML do Menu -->
+  <header>
+    <nav class="navbar">
+      <!-- Logo da Instituição + Nome do Sistema -->
+      <div class="logo-container">
+        <img src="CBMPR1.png" alt="Logo CBMPR" class="logo-img">
+        <span class="logo-text">CBMPR - CRS</span>
+      </div>
+      
+      <div class="hamburger" id="hamburger">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+
+      <ul class="nav-menu" id="nav-menu">
+        <!-- Item Principal com Submenu -->
+        <li class="nav-item dropdown" id="dropdown-inicio">
+          <a href="#" class="nav-link" id="btn-inicio">
+            Início <span class="arrow">▼</span>
+          </a>
+          <!-- Submenu -->
+          <ul class="dropdown-menu">
+            <li><a href="#cadastrar-concurso" class="dropdown-link">Cadastrar Concurso</a></li>
+            <li><a href="cadastrar-candidatos_.html" class="dropdown-link">Cadastrar Candidatos</a></li>
+            <li><a href="cadastrar-candidatos.html" class="dropdown-link">Cadastrar Candidatos</a></li>
+            <li><a href="candidatotaf.html" class="dropdown-link">CadidatoTAF</a></li>
+            <li><a href="#cadastrar-comissoes" class="dropdown-link">Cadastrar Comissões</a></li>
+            <li><a href="#cadastrar-usuarios" class="dropdown-link">Cadastrar Usuários</a></li>
+          </ul>
+        </li>
+
+        <li class="nav-item"><a href="#sobre" class="nav-link">Sobre</a></li>
+        <li class="nav-item"><a href="#servicos" class="nav-link">Serviços</a></li>
+        <li class="nav-item"><a href="#contato" class="nav-link">Contato</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Código JavaScript -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const hamburger = document.getElementById('hamburger');
+      const navMenu = document.getElementById('nav-menu');
+      const dropdownInicio = document.getElementById('dropdown-inicio');
+      const btnInicio = document.getElementById('btn-inicio');
+      const dropdownLinks = document.querySelectorAll('.dropdown-link');
+
+      // 1. Toggle do Menu Mobile (Abrir/Fechar Menu Hamburguer)
+      hamburger.addEventListener('click', () => {
+        hamburger.classList.toggle('active');
+        navMenu.classList.toggle('open');
+      });
+
+      // 2. Abrir / Fechar Submenu de "Início" no Clique
+      btnInicio.addEventListener('click', (e) => {
+        e.preventDefault(); // Impede o salto da página pelo href="#"
+        dropdownInicio.classList.toggle('dropdown-open');
+      });
+
+      // 3. Suporte para Mouse Hover em telas Desktop
+      dropdownInicio.addEventListener('mouseenter', () => {
+        if (window.innerWidth > 768) {
+          dropdownInicio.classList.add('dropdown-open');
+        }
+      });
+
+      dropdownInicio.addEventListener('mouseleave', () => {
+        if (window.innerWidth > 768) {
+          dropdownInicio.classList.remove('dropdown-open');
+        }
+      });
+
+      // 4. Fechar o submenu e o menu mobile ao clicar em uma opção do submenu
+      dropdownLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          dropdownInicio.classList.remove('dropdown-open');
+          navMenu.classList.remove('open');
+          hamburger.classList.remove('active');
+        });
+      });
+
+      // 5. Fechar o submenu se clicar em qualquer lugar fora dele
+      document.addEventListener('click', (e) => {
+        if (!dropdownInicio.contains(e.target)) {
+          dropdownInicio.classList.remove('dropdown-open');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

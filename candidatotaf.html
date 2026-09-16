@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Candidatos e TAF - CBMPR CRS</title>
+  <style>
+    :root {
+      --primary-color: #1e293b;
+      --accent-color: #0284c7;
+      --accent-hover: #0369a1;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #334155;
+      --border-color: #cbd5e1;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 2rem 1rem;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* Cabeçalho Ajustado */
+    .form-header {
+      background-color: var(--primary-color);
+      color: #ffffff;
+      padding: 1.5rem 2rem;
+      border-bottom: 4px solid var(--accent-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-info {
+      flex: 1;
+    }
+
+    .form-header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .form-header p {
+      font-size: 0.875rem;
+      color: #94a3b8;
+    }
+
+    /* Logo no Canto Superior Direito */
+    .header-logo img {
+      height: 70px;
+      width: auto;
+      display: block;
+      object-fit: contain;
+    }
+
+    /* Navegação por Abas */
+    .tabs-nav {
+      display: flex;
+      background-color: #f1f5f9;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 1rem;
+      text-align: center;
+      background: none;
+      border: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-bottom: 3px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .tab-btn:hover {
+      background-color: #e2e8f0;
+      color: var(--primary-color);
+    }
+
+    .tab-btn.active {
+      color: var(--accent-color);
+      background-color: #ffffff;
+      border-bottom-color: var(--accent-color);
+    }
+
+    form {
+      padding: 2rem;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+
+    /* Grid Span Configurations */
+    .col-2 { grid-column: span 2; }
+    .col-3 { grid-column: span 3; }
+    .col-4 { grid-column: span 4; }
+    .col-6 { grid-column: span 6; }
+    .col-7 { grid-column: span 7; }
+    .col-8 { grid-column: span 8; }
+    .col-9 { grid-column: span 9; }
+    .col-12 { grid-column: span 12; }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #475569;
+    }
+
+    label .required {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      font-size: 0.95rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background-color: #ffffff;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    input[readonly] {
+      background-color: #f1f5f9;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+
+    /* Botões */
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .action-group-right {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-cancel {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+
+    .btn-cancel:hover {
+      background-color: #fecaca;
+      color: #7f1d1d;
+    }
+
+    .btn-secondary {
+      background-color: #e2e8f0;
+      color: #475569;
+    }
+
+    .btn-secondary:hover {
+      background-color: #cbd5e1;
+      color: #1e293b;
+    }
+
+    .btn-primary {
+      background-color: var(--accent-color);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    /* Alerta de Sucesso */
+    .alert {
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      display: none;
+      font-size: 0.9rem;
+      background-color: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .form-header {
+        flex-direction: column-reverse;
+        align-items: flex-start;
+      }
+
+      .header-logo img {
+        height: 55px;
+      }
+
+      .col-2, .col-3, .col-4, .col-6, .col-7, .col-8, .col-9 {
+        grid-column: span 12;
+      }
+
+      form {
+        padding: 1.25rem;
+      }
+      
+      .form-actions {
+        flex-direction: column-reverse;
+      }
+
+      .action-group-right {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="form-header">
+      <div class="header-info">
+        <h1>CBMPR CRS - Cadastro & Avaliação Física (TAF)</h1>
+        <p>Sistema Concursos - Gerenciamento de candidato e teste de aptidão física</p>
+      </div>
+      <div class="header-logo">
+        <img src="CBMPR1.png" alt="Logo CBMPR CRS">
+      </div>
+    </div>
+
+    <!-- Navegação das Abas -->
+    <div class="tabs-nav">
+      <button type="button" class="tab-btn active" onclick="switchTab('tab-dados')">
+        <span>📋</span> Dados do Candidato
+      </button>
+      <button type="button" class="tab-btn" onclick="switchTab('tab-taf')">
+        <span>🏃</span> Resultados do TAF
+      </button>
+    </div>
+
+    <form id="formCandidato">
+      <div id="mensagemSucesso" class="alert">
+        Dados do candidato e TAF cadastrados com sucesso!
+      </div>
+
+      <!-- ABA 1: DADOS DO CANDIDATO -->
+      <div id="tab-dados" class="tab-content active">
+        <div class="section-title">
+          <span>👤</span> Dados Pessoais
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group col-3">
+            <label for="idCandidato">ID do Candidato</label>
+            <input type="text" id="idCandidato" name="idCandidato" value="CND-2026-001" readonly>
+          </div>
+
+          <div class="form-group col-9">
+            <label for="nomeCompleto">Nome Completo <span class="required">*</span></label>
+            <input type="text" id="nomeCompleto" name="nomeCompleto" placeholder="Ex: Maria Silva" required>
+          </div>
+
+          <div class="form-group col-4">
+            <label for="cpf">CPF <span class="required">*</span></label>
+            <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" maxlength="14" required>
+          </div>
+
+          <div class="form-group col-4">
+            <label for="dataNascimento">Data de Nascimento <span class="required">*</span></label>
+            <input type="date" id="dataNascimento" name="dataNascimento" required>
+          </div>
+
+          <div class="form-group col-4">
+            <label for="telefone">Telefone / WhatsApp <span class="required">*</span></label>
+            <input type="tel" id="telefone" name="telefone" placeholder="(00) 00000-0000" maxlength="15" required>
+          </div>
+
+          <div class="form-group col-12">
+            <label for="email">E-mail <span class="required">*</span></label>
+            <input type="email" id="email" name="email" placeholder="candidato@email.com" required>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <span>📍</span> Endereço Residencial
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group col-3">
+            <label for="cep">CEP <span class="required">*</span></label>
+            <input type="text" id="cep" name="cep" placeholder="00000-000" maxlength="9" required>
+          </div>
+
+          <div class="form-group col-7">
+            <label for="endereco">Endereço (Rua/Avenida) <span class="required">*</span></label>
+            <input type="text" id="endereco" name="endereco" placeholder="Ex: Av. Brasil" required>
+          </div>
+
+          <div class="form-group col-2">
+            <label for="numero">Número <span class="required">*</span></label>
+            <input type="text" id="numero" name="numero" placeholder="123" required>
+          </div>
+
+          <div class="form-group col-4">
+            <label for="complemento">Complemento</label>
+            <input type="text" id="complemento" name="complemento" placeholder="Apto 101, Bloco B">
+          </div>
+
+          <div class="form-group col-8">
+            <label for="bairro">Bairro <span class="required">*</span></label>
+            <input type="text" id="bairro" name="bairro" placeholder="Centro" required>
+          </div>
+
+          <div class="form-group col-8">
+            <label for="cidade">Cidade <span class="required">*</span></label>
+            <input type="text" id="cidade" name="cidade" placeholder="Maringá" required>
+          </div>
+
+          <div class="form-group col-4">
+            <label for="estado">Estado (UF) <span class="required">*</span></label>
+            <select id="estado" name="estado" required>
+              <option value="">Selecione...</option>
+              <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+              <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+              <option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option>
+              <option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+              <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+              <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+              <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+              <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+              <option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 2: RESULTADOS DO TAF -->
+      <div id="tab-taf" class="tab-content">
+        <div class="section-title">
+          <span>⏱️</span> Teste de Aptidão Física (TAF)
+        </div>
+
+        <div class="form-grid">
+          <!-- Corrida 2400m -->
+          <div class="form-group col-6">
+            <label for="corridaTempo">Corrida 2.400m (Tempo min:seg)</label>
+            <input type="text" id="corridaTempo" name="corridaTempo" placeholder="Ex: 11:30">
+          </div>
+          <div class="form-group col-6">
+            <label for="corridaSituacao">Situação - Corrida</label>
+            <select id="corridaSituacao" name="corridaSituacao">
+              <option value="">Selecione...</option>
+              <option value="Apto">Apto</option>
+              <option value="Inapto">Inapto</option>
+            </select>
+          </div>
+
+          <!-- Barra Fixa -->
+          <div class="form-group col-6">
+            <label for="barraQtd">Barra Fixa (Repetições / Isometria seg)</label>
+            <input type="text" id="barraQtd" name="barraQtd" placeholder="Ex: 8 repetições ou 30s">
+          </div>
+          <div class="form-group col-6">
+            <label for="barraSituacao">Situação - Barra Fixa</label>
+            <select id="barraSituacao" name="barraSituacao">
+              <option value="">Selecione...</option>
+              <option value="Apto">Apto</option>
+              <option value="Inapto">Inapto</option>
+            </select>
+          </div>
+
+          <!-- Subida na Corda -->
+          <div class="form-group col-6">
+            <label for="cordaResultado">Subida na Corda (Tempo / Metros)</label>
+            <input type="text" id="cordaResultado" name="cordaResultado" placeholder="Ex: 4 metros em 15s">
+          </div>
+          <div class="form-group col-6">
+            <label for="cordaSituacao">Situação - Subida na Corda</label>
+            <select id="cordaSituacao" name="cordaSituacao">
+              <option value="">Selecione...</option>
+              <option value="Apto">Apto</option>
+              <option value="Inapto">Inapto</option>
+            </select>
+          </div>
+
+          <!-- Trave Suspensa -->
+          <div class="form-group col-6">
+            <label for="traveResultado">Trave Suspensa (Tempo / Desempenho)</label>
+            <input type="text" id="traveResultado" name="traveResultado" placeholder="Ex: Concluído em 45s">
+          </div>
+          <div class="form-group col-6">
+            <label for="traveSituacao">Situação - Trave Suspensa</label>
+            <select id="traveSituacao" name="traveSituacao">
+              <option value="">Selecione...</option>
+              <option value="Apto">Apto</option>
+              <option value="Inapto">Inapto</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-cancel" onclick="cancelarCadastro()">Cancelar</button>
+        
+        <div class="action-group-right">
+          <button type="button" class="btn btn-secondary" onclick="limparFormulario()">Limpar</button>
+          <button type="button" id="btnAnterior" class="btn btn-secondary" onclick="switchTab('tab-dados')" style="display: none;">Anterior</button>
+          <button type="button" id="btnProximo" class="btn btn-primary" onclick="switchTab('tab-taf')">Próximo</button>
+          <button type="submit" id="btnSalvar" class="btn btn-primary" style="display: none;">Cadastrar Candidato</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+<!-- Importação dos módulos do Firebase via CDN (Web SDK v10) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // Configuração do Projeto Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDylANn9BDucVybMmFpwCmG6z3qSuJ2G7M",
+    authDomain: "crscbm.firebaseapp.com",
+    projectId: "crscbm",
+    storageBucket: "crscbm.firebasestorage.app",
+    messagingSenderId: "1054901223016",
+    appId: "1:1054901223016:web:48a3b64d99f1bd6e10c5dd",
+    measurementId: "G-6TVP8RQFTV"
+  };
+
+  // Inicializa o Firebase e Firestore
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Alternar Abas
+  window.switchTab = function(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+    document.getElementById(tabId).classList.add('active');
+
+    const btnProximo = document.getElementById('btnProximo');
+    const btnAnterior = document.getElementById('btnAnterior');
+    const btnSalvar = document.getElementById('btnSalvar');
+
+    if (tabId === 'tab-dados') {
+      document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      btnProximo.style.display = 'inline-block';
+      btnAnterior.style.display = 'none';
+      btnSalvar.style.display = 'none';
+    } else {
+      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      btnProximo.style.display = 'none';
+      btnAnterior.style.display = 'inline-block';
+      btnSalvar.style.display = 'inline-block';
+    }
+  };
+
+  // Máscaras de Entrada
+  const cpfInput = document.getElementById('cpf');
+  const telefoneInput = document.getElementById('telefone');
+  const cepInput = document.getElementById('cep');
+
+  cpfInput.addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    e.target.value = v;
+  });
+
+  telefoneInput.addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '');
+    v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
+    v = v.replace(/(\d{5})(\d)/, '$1-$2');
+    e.target.value = v;
+  });
+
+  cepInput.addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g, '');
+    v = v.replace(/^(\d{5})(\d)/, '$1-$2');
+    e.target.value = v;
+  });
+
+  // Busca Automática de CEP
+  cepInput.addEventListener('blur', () => {
+    const cep = cepInput.value.replace(/\D/g, '');
+    if (cep.length === 8) {
+      fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.erro) {
+            document.getElementById('endereco').value = data.logradouro;
+            document.getElementById('bairro').value = data.bairro;
+            document.getElementById('cidade').value = data.localidade;
+            document.getElementById('estado').value = data.uf;
+            document.getElementById('numero').focus();
+          }
+        })
+        .catch(err => console.error('Erro ao buscar CEP:', err));
+    }
+  });
+
+  // Envio dos Dados para o Firestore
+  const form = document.getElementById('formCandidato');
+  const mensagemSucesso = document.getElementById('mensagemSucesso');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    try {
+      const formData = new FormData(form);
+      const dadosForm = Object.fromEntries(formData.entries());
+
+      const novoCandidato = {
+        codigoCandidato: dadosForm.idCandidato || "CND-2026-001",
+        dadosPessoais: {
+          nomeCompleto: dadosForm.nomeCompleto,
+          cpf: dadosForm.cpf,
+          dataNascimento: dadosForm.dataNascimento,
+          telefone: dadosForm.telefone,
+          email: dadosForm.email
+        },
+        endereco: {
+          cep: dadosForm.cep,
+          logradouro: dadosForm.endereco,
+          numero: dadosForm.numero,
+          complemento: dadosForm.complemento || "",
+          bairro: dadosForm.bairro,
+          cidade: dadosForm.cidade,
+          estado: dadosForm.estado
+        },
+        taf: {
+          corrida: {
+            tempo: dadosForm.corridaTempo || "",
+            situacao: dadosForm.corridaSituacao || ""
+          },
+          barra: {
+            quantidade: dadosForm.barraQtd || "",
+            situacao: dadosForm.barraSituacao || ""
+          },
+          corda: {
+            resultado: dadosForm.cordaResultado || "",
+            situacao: dadosForm.cordaSituacao || ""
+          },
+          trave: {
+            resultado: dadosForm.traveResultado || "",
+            situacao: dadosForm.traveSituacao || ""
+          }
+        },
+        criadoEm: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, "candidatos"), novoCandidato);
+      console.log("Candidato cadastrado no Firestore com ID:", docRef.id);
+
+      mensagemSucesso.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      setTimeout(() => {
+        mensagemSucesso.style.display = 'none';
+        window.limparFormulario();
+        window.switchTab('tab-dados');
+      }, 4000);
+
+    } catch (error) {
+      console.error("Erro ao salvar no Firebase:", error);
+      alert("Erro ao salvar os dados. Verifique a configuração do seu Firebase.");
+    }
+  });
+
+  // Funções Utilitárias Globais
+  window.limparFormulario = function() {
+    form.reset();
+    document.getElementById('idCandidato').value = 'CND-2026-001';
+  };
+
+  window.cancelarCadastro = function() {
+    if (confirm('Deseja realmente cancelar? Os dados inseridos serão perdidos.')) {
+      window.location.href = 'index.html';
+    }
+  };
+</script>
+</body>
+</html>
