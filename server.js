@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2/promise'); // Utilizando promise para transações async/await
+const mysql = require('mysql2/promise');
 const cors = require('cors');
 
 const app = express();
@@ -15,6 +15,57 @@ const pool = mysql.createPool({
   ssl: { rejectUnauthorized: false }
 });
 
+// 1. ROTA DE LISTAGEM / BUSCA (Soluciona o erro 404 ao abrir a busca)
+app.get('/api/candidatos', async (req, res) => {
+  try {
+    const { termo } = req.query;
+    let sql = `
+      SELECT 
+        c.id, 
+        c.codigo_candidato AS idCandidato, 
+        c.nome_completo AS nomeCompleto, 
+        c.cpf, 
+        DATE_FORMAT(c.data_nascimento, '%Y-%m-%d') AS dataNascimento,
+        c.telefone, 
+        c.email, 
+        c.cep, 
+        c.logradouro AS endereco, 
+        c.numero, 
+        c.complemento,
+        c.bairro, 
+        c.cidade, 
+        c.estado,
+        t.corrida_tempo AS corridaTempo, 
+        t.corrida_situacao AS corridaSituacao,
+        t.barra_qtd AS barraQtd, 
+        t.barra_situacao AS barraSituacao,
+        t.corda_resultado AS cordaResultado, 
+        t.corda_situacao AS cordaSituacao,
+        t.trave_resultado AS traveResultado, 
+        t.trave_situacao AS traveSituacao
+      FROM candidatos c
+      LEFT JOIN taf_resultados t ON c.id = t.candidato_id
+    `;
+
+    const params = [];
+
+    if (termo) {
+      sql += ` WHERE c.codigo_candidato LIKE ? OR c.nome_completo LIKE ? OR c.cpf LIKE ?`;
+      const t = `%${termo.trim()}%`;
+      params.push(t, t, t);
+    }
+
+    sql += ` ORDER BY c.id DESC`;
+
+    const [rows] = await pool.query(sql, params);
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao consultar banco de dados:', err);
+    res.status(500).json({ error: 'Erro interno ao realizar a consulta.' });
+  }
+});
+
+// 2. ROTA DE CADASTRO (POST)
 app.post('/api/candidatos', async (req, res) => {
   const connection = await pool.getConnection();
   try {
@@ -27,7 +78,6 @@ app.post('/api/candidatos', async (req, res) => {
       cordaResultado, cordaSituacao, traveResultado, traveSituacao
     } = req.body;
 
-    // 1. Insere o Candidato
     const sqlCandidato = `
       INSERT INTO candidatos 
       (codigo_candidato, nome_completo, cpf, data_nascimento, telefone, email, cep, logradouro, numero, complemento, bairro, cidade, estado)
@@ -41,7 +91,6 @@ app.post('/api/candidatos', async (req, res) => {
 
     const candidatoId = resCandidato.insertId;
 
-    // 2. Insere os dados do TAF vinculado ao candidato
     const sqlTaf = `
       INSERT INTO taf_resultados
       (candidato_id, corrida_tempo, corrida_situacao, barra_qtd, barra_situacao, corda_resultado, corda_situacao, trave_resultado, trave_situacao)
@@ -68,40 +117,69 @@ app.post('/api/candidatos', async (req, res) => {
   }
 });
 
-// Rota para consultar candidatos por ID, Nome ou CPF
-app.get('/api/candidatos/buscar', async (req, res) => {
-  const { termo } = req.query;
-
-  if (!termo) {
-    return res.status(400).json({ error: 'Informe um termo para busca (ID, Nome ou CPF).' });
-  }
+// 3. ROTA DE EDIÇÃO / ATUALIZAÇÃO (PUT)
+app.put('/api/candidatos/:id', async (req, res) => {
+  const { id } = req.params;
+  const connection = await pool.getConnection();
 
   try {
-    // Busca combinando candidatos com seus resultados do TAF
-    const sql = `
-      SELECT 
-        c.id, c.codigo_candidato, c.nome_completo, c.cpf, c.data_nascimento,
-        c.telefone, c.email, c.cep, c.logradouro, c.numero, c.complemento,
-        c.bairro, c.cidade, c.estado, c.criado_em,
-        t.corrida_tempo, t.corrida_situacao,
-        t.barra_qtd, t.barra_situacao,
-        t.corda_resultado, t.corda_situacao,
-        t.trave_resultado, t.trave_situacao
-      FROM candidatos c
-      LEFT JOIN taf_resultados t ON c.id = t.candidato_id
-      WHERE c.codigo_candidato LIKE ? 
-         OR c.nome_completo LIKE ? 
-         OR c.cpf LIKE ?
-      ORDER BY c.id DESC
+    await connection.beginTransaction();
+
+    const {
+      idCandidato, nomeCompleto, cpf, dataNascimento, telefone, email,
+      cep, endereco, numero, complemento, bairro, cidade, estado,
+      corridaTempo, corridaSituacao, barraQtd, barraSituacao,
+      cordaResultado, cordaSituacao, traveResultado, traveSituacao
+    } = req.body;
+
+    // Atualiza Candidato
+    const sqlCandidato = `
+      UPDATE candidatos 
+      SET codigo_candidato = ?, nome_completo = ?, cpf = ?, data_nascimento = ?, 
+          telefone = ?, email = ?, cep = ?, logradouro = ?, numero = ?, 
+          complemento = ?, bairro = ?, cidade = ?, estado = ?
+      WHERE id = ? OR codigo_candidato = ?
     `;
 
-    const termoBusca = `%${termo.trim()}%`;
-    const [rows] = await pool.query(sql, [termoBusca, termoBusca, termoBusca]);
+    await connection.execute(sqlCandidato, [
+      idCandidato, nomeCompleto, cpf, dataNascimento, telefone, email,
+      cep, endereco, numero, complemento || null, bairro, cidade, estado,
+      id, id
+    ]);
 
-    res.json(rows);
+    // Atualiza ou Insere TAF
+    const sqlTaf = `
+      INSERT INTO taf_resultados 
+      (candidato_id, corrida_tempo, corrida_situacao, barra_qtd, barra_situacao, corda_resultado, corda_situacao, trave_resultado, trave_situacao)
+      VALUES ((SELECT id FROM candidatos WHERE id = ? OR codigo_candidato = ? LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE 
+        corrida_tempo = VALUES(corrida_tempo),
+        corrida_situacao = VALUES(corrida_situacao),
+        barra_qtd = VALUES(barra_qtd),
+        barra_situacao = VALUES(barra_situacao),
+        corda_resultado = VALUES(corda_resultado),
+        corda_situacao = VALUES(corda_situacao),
+        trave_resultado = VALUES(trave_resultado),
+        trave_situacao = VALUES(trave_situacao)
+    `;
+
+    await connection.execute(sqlTaf, [
+      id, id,
+      corridaTempo || null, corridaSituacao || null,
+      barraQtd || null, barraSituacao || null,
+      cordaResultado || null, cordaSituacao || null,
+      traveResultado || null, traveSituacao || null
+    ]);
+
+    await connection.commit();
+    res.json({ message: 'Dados do candidato e TAF atualizados com sucesso!' });
+
   } catch (err) {
-    console.error('Erro ao consultar banco de dados:', err);
-    res.status(500).json({ error: 'Erro interno ao realizar a consulta.' });
+    await connection.rollback();
+    console.error('Erro ao atualizar registro:', err);
+    res.status(500).json({ error: 'Erro ao atualizar dados no banco.', detail: err.message });
+  } finally {
+    connection.release();
   }
 });
 
