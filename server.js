@@ -68,6 +68,43 @@ app.post('/api/candidatos', async (req, res) => {
   }
 });
 
+// Rota para consultar candidatos por ID, Nome ou CPF
+app.get('/api/candidatos/buscar', async (req, res) => {
+  const { termo } = req.query;
+
+  if (!termo) {
+    return res.status(400).json({ error: 'Informe um termo para busca (ID, Nome ou CPF).' });
+  }
+
+  try {
+    // Busca combinando candidatos com seus resultados do TAF
+    const sql = `
+      SELECT 
+        c.id, c.codigo_candidato, c.nome_completo, c.cpf, c.data_nascimento,
+        c.telefone, c.email, c.cep, c.logradouro, c.numero, c.complemento,
+        c.bairro, c.cidade, c.estado, c.criado_em,
+        t.corrida_tempo, t.corrida_situacao,
+        t.barra_qtd, t.barra_situacao,
+        t.corda_resultado, t.corda_situacao,
+        t.trave_resultado, t.trave_situacao
+      FROM candidatos c
+      LEFT JOIN taf_resultados t ON c.id = t.candidato_id
+      WHERE c.codigo_candidato LIKE ? 
+         OR c.nome_completo LIKE ? 
+         OR c.cpf LIKE ?
+      ORDER BY c.id DESC
+    `;
+
+    const termoBusca = `%${termo.trim()}%`;
+    const [rows] = await pool.query(sql, [termoBusca, termoBusca, termoBusca]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao consultar banco de dados:', err);
+    res.status(500).json({ error: 'Erro interno ao realizar a consulta.' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
