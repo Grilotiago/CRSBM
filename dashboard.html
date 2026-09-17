@@ -14,7 +14,6 @@
       --primary: #3b82f6;
       --secondary: #10b981;
       --accent: #f59e0b;
-      --purple: #8b5cf6;
       --border: #334155;
     }
 
@@ -136,7 +135,7 @@
   <header>
     <div>
       <h1 style="font-size: 1.6rem; font-weight: 700;">Dashboard de Inscritos</h1>
-      <p style="color: var(--text-muted); font-size: 0.9rem;">Conectado ao serviço de API (<code>cbm-palz</code>)</p>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Visão demográfica conectada ao Render (<code>cbm-palz</code>)</p>
     </div>
     <div class="header-actions">
       <button class="btn-refresh" onclick="carregarDashboard()">↻ Atualizar</button>
@@ -144,6 +143,7 @@
     </div>
   </header>
 
+  <!-- KPIs -->
   <section class="kpis">
     <div class="kpi-card">
       <div class="label">Total de Inscritos</div>
@@ -158,11 +158,12 @@
       <div class="val" id="kpi-estados">0</div>
     </div>
     <div class="kpi-card">
-      <div class="label">Maioria Étnico-Racial</div>
-      <div class="val" id="kpi-top-raca" style="font-size: 1.3rem; margin-top: 10px;">-</div>
+      <div class="label">Top Cidade (PR)</div>
+      <div class="val" id="kpi-top-cidade" style="font-size: 1.3rem; margin-top: 10px;">-</div>
     </div>
   </section>
 
+  <!-- Gráficos -->
   <section class="grid-charts">
     <div class="card-chart">
       <h3>Distribuição por Sexo</h3>
@@ -179,9 +180,9 @@
     </div>
 
     <div class="card-chart">
-      <h3>Declaração Étnico-Racial</h3>
+      <h3>Inscritos por Cidade (Paraná - PR)</h3>
       <div class="chart-container">
-        <canvas id="chartEtnico"></canvas>
+        <canvas id="chartCidadesPR"></canvas>
       </div>
     </div>
 
@@ -193,9 +194,10 @@
     </div>
   </section>
 
+  <!-- Tabela Resumo -->
   <section class="table-card">
     <h3 style="font-size: 0.95rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;">
-      Detalhamento Geográfico e Médias de Idade
+      Detalhamento Geográfico por Estado (UF)
     </h3>
     <table>
       <thead>
@@ -213,7 +215,7 @@
   </section>
 
   <script>
-    // Aponta diretamente para o Web Service Node (cbm)
+    // Aponta diretamente para a API Node no Render
     const API_URL = 'https://cbm-palz.onrender.com/api/dashboard';
 
     Chart.defaults.color = '#94a3b8';
@@ -251,8 +253,8 @@
       document.getElementById('kpi-idade').textContent = (data.resumo?.mediaIdade ?? 0) + ' anos';
       document.getElementById('kpi-estados').textContent = data.estados?.length ?? 0;
       
-      const topRaca = (data.etnicoRacial && data.etnicoRacial.length > 0) ? data.etnicoRacial[0] : null;
-      document.getElementById('kpi-top-raca').textContent = topRaca ? `${topRaca.raca} (${topRaca.total})` : '-';
+      const topCidade = (data.cidadesPR && data.cidadesPR.length > 0) ? data.cidadesPR[0] : null;
+      document.getElementById('kpi-top-cidade').textContent = topCidade ? `${topCidade.cidade} (${topCidade.total})` : '-';
     }
 
     function criarOuAtualizarChart(id, config) {
@@ -266,6 +268,7 @@
     }
 
     function renderizarGraficos(data) {
+      // 1. Sexo (Doughnut)
       criarOuAtualizarChart('chartSexo', {
         type: 'doughnut',
         data: {
@@ -279,6 +282,7 @@
         options: { responsive: true, maintainAspectRatio: false }
       });
 
+      // 2. Faixa Etária (Barra Vertical)
       criarOuAtualizarChart('chartIdade', {
         type: 'bar',
         data: {
@@ -301,19 +305,31 @@
         }
       });
 
-      criarOuAtualizarChart('chartEtnico', {
-        type: 'doughnut',
+      // 3. Cidades do PR (Barra Horizontal)
+      criarOuAtualizarChart('chartCidadesPR', {
+        type: 'bar',
         data: {
-          labels: (data.etnicoRacial || []).map(r => r.raca),
+          labels: (data.cidadesPR || []).map(c => c.cidade),
           datasets: [{
-            data: (data.etnicoRacial || []).map(r => r.total),
-            backgroundColor: ['#f59e0b', '#8b5cf6', '#06b6d4', '#64748b'],
-            borderWidth: 0
+            label: 'Inscritos',
+            data: (data.cidadesPR || []).map(c => c.total),
+            backgroundColor: '#f59e0b',
+            borderRadius: 4
           }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, grid: { color: '#334155' } },
+            y: { grid: { display: false } }
+          }
+        }
       });
 
+      // 4. Estados (Barra Horizontal)
       criarOuAtualizarChart('chartEstados', {
         type: 'bar',
         data: {
