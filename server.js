@@ -7,16 +7,14 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: 'https://crsbm.onrender.com',
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Accept']
 }));
 app.use(express.json());
-
-// Servir arquivos estáticos (permite abrir /dashboard.html no próprio domínio)
 app.use(express.static(__dirname));
 
-// Conexão com o banco MariaDB
+// Pool de Conexão MariaDB (Layerbase)
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'cbmcrs-lime-clay.sage.cloud.layerbase.dev',
   user: process.env.DB_USER || 'root',
@@ -30,6 +28,7 @@ const pool = mysql.createPool({
 // ROTAS DA TABELA: `candidatos` (TAF)
 // ==========================================
 
+// 1. Rota de Listagem / Busca
 app.get('/api/candidatos', async (req, res) => {
   try {
     const { termo } = req.query;
@@ -77,6 +76,7 @@ app.get('/api/candidatos', async (req, res) => {
   }
 });
 
+// 2. Rota de Cadastro (POST)
 app.post('/api/candidatos', async (req, res) => {
   const connection = await pool.getConnection();
   try {
@@ -125,6 +125,7 @@ app.post('/api/candidatos', async (req, res) => {
   }
 });
 
+// 3. Rota de Atualização (PUT)
 app.put('/api/candidatos/:id', async (req, res) => {
   const { id } = req.params;
   const connection = await pool.getConnection();
@@ -185,12 +186,13 @@ app.put('/api/candidatos/:id', async (req, res) => {
   }
 });
 
-/ ==========================================
+// ==========================================
 // ROTA DO DASHBOARD: Tabela `candidato`
 // ==========================================
+
 app.get('/api/dashboard', async (req, res) => {
   try {
-    // 1. Métricas Gerais (Total e Média de Idade)
+    // 1. Total e Média de Idade
     const [resumoRows] = await pool.query(`
       SELECT 
         COUNT(*) AS totalInscritos,
@@ -239,14 +241,14 @@ app.get('/api/dashboard', async (req, res) => {
       ORDER BY total DESC
     `);
 
-    // 5. Cidades do Paraná (PR) - Substitui a análise étnico-racial
+    // 5. Cidades do Paraná (PR)
     const [cidadesPRRows] = await pool.query(`
       SELECT 
         COALESCE(NULLIF(TRIM(municipio), ''), 'Não Informado') AS cidade,
         COUNT(*) AS total
       FROM candidato
-      WHERE estado = 'PR'
-      GROUP BY municipio
+      WHERE UPPER(TRIM(estado)) IN ('PR', 'PARANA', 'PARANÁ')
+      GROUP BY cidade
       ORDER BY total DESC
     `);
 
@@ -259,7 +261,7 @@ app.get('/api/dashboard', async (req, res) => {
     });
   } catch (err) {
     console.error('ERRO na rota /api/dashboard:', err);
-    res.status(500).json({ error: 'Erro ao consultar dashboard', detail: err.message });
+    res.status(500).json({ error: 'Erro interno ao carregar dashboard', detail: err.message });
   }
 });
 
