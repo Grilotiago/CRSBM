@@ -35,6 +35,12 @@
       gap: 12px;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
     .badge {
       font-size: 0.85rem;
       padding: 6px 14px;
@@ -43,6 +49,19 @@
       border: 1px solid var(--border);
       color: var(--secondary);
     }
+
+    .btn-refresh {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 7px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-refresh:hover { opacity: 0.9; }
 
     .kpis {
       display: grid;
@@ -117,9 +136,12 @@
   <header>
     <div>
       <h1 style="font-size: 1.6rem; font-weight: 700;">Dashboard de Inscritos</h1>
-      <p style="color: var(--text-muted); font-size: 0.9rem;">Visão demográfica baseada na tabela <code>candidato</code></p>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Visão demográfica conectada ao Render (<code>crsbm</code>)</p>
     </div>
-    <div id="status-conn" class="badge">Conectando ao banco...</div>
+    <div class="header-actions">
+      <button class="btn-refresh" onclick="carregarDashboard()">↻ Atualizar</button>
+      <div id="status-conn" class="badge">Conectando...</div>
+    </div>
   </header>
 
   <!-- Métricas Rápidas -->
@@ -194,33 +216,37 @@
   </section>
 
   <script>
-    const API_URL = 'http://localhost:3000/api/dashboard';
+    // URL apontando para o Render crsbm
+    const API_URL = (window.location.hostname.includes('onrender.com'))
+      ? '/api/dashboard'
+      : 'https://crsbm.onrender.com/api/dashboard';
 
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, sans-serif';
 
-    // Instâncias dos gráficos para permitir atualização limpa
     let chartInstances = {};
 
     async function carregarDashboard() {
       const status = document.getElementById('status-conn');
+      status.textContent = '● Consultando API...';
+      status.style.color = '#f59e0b';
+
       try {
-        // Cache bypass adicionando timestamp na URL
         const res = await fetch(`${API_URL}?_t=${Date.now()}`);
         if (!res.ok) {
-          throw new Error(`Status da resposta: ${res.status} (${res.statusText})`);
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
         const data = await res.json();
 
-        status.textContent = '● Conectado ao MariaDB';
+        status.textContent = '● Online (Render crsbm)';
         status.style.color = '#10b981';
 
         atualizarKPIs(data);
         renderizarGraficos(data);
         renderizarTabela(data);
       } catch (err) {
-        console.error('Falha na sincronização:', err);
-        status.textContent = '● Falha na API: ' + err.message;
+        console.error('Falha de conexão com a API:', err);
+        status.textContent = '● Servidor inicializando (aguarde 30s)...';
         status.style.color = '#ef4444';
       }
     }
@@ -230,7 +256,7 @@
       document.getElementById('kpi-idade').textContent = (data.resumo?.mediaIdade ?? 0) + ' anos';
       document.getElementById('kpi-estados').textContent = data.estados?.length ?? 0;
       
-      const topRaca = data.etnicoRacial && data.etnicoRacial.length > 0 ? data.etnicoRacial[0] : null;
+      const topRaca = (data.etnicoRacial && data.etnicoRacial.length > 0) ? data.etnicoRacial[0] : null;
       document.getElementById('kpi-top-raca').textContent = topRaca ? `${topRaca.raca} (${topRaca.total})` : '-';
     }
 
@@ -327,7 +353,7 @@
       const totalGeral = data.resumo?.totalInscritos || 1;
 
       if (!data.estados || data.estados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Nenhum registro encontrado no banco.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Nenhum candidato encontrado.</td></tr>';
         return;
       }
 
@@ -344,10 +370,10 @@
       });
     }
 
-    // Carrega ao iniciar e atualiza automaticamente a cada 10 segundos
     window.onload = () => {
       carregarDashboard();
-      setInterval(carregarDashboard, 10000);
+      // Atualização periódica automática a cada 15 segundos
+      setInterval(carregarDashboard, 15000);
     };
   </script>
 </body>
