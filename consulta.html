@@ -4,248 +4,710 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Consulta de Candidatos e TAF - CBMPR CRS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary-color: #1e293b;
-      --accent-color: #0284c7;
-      --bg-color: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #334155;
-      --border-color: #cbd5e1;
+      --primary: #0f172a;
+      --primary-light: #1e293b;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --border-focus: #38bdf8;
+      
+      --success-bg: #ecfdf5;
+      --success-text: #065f46;
+      --success-border: #a7f3d0;
+      
+      --danger-bg: #fef2f2;
+      --danger-text: #991b1b;
+      --danger-border: #fecaca;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
     }
 
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      padding: 2rem 1rem;
+      background-color: var(--bg);
+      color: var(--text-primary);
+      padding: 2.5rem 1rem;
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: flex-start;
     }
 
-    .container {
+    .main-wrapper {
       width: 100%;
-      max-width: 950px;
-      background: var(--card-bg);
-      border-radius: 12px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-      border: 1px solid #e2e8f0;
+      max-width: 1000px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
     }
 
-    .header {
-      background-color: var(--primary-color);
+    /* Topo Institucional */
+    .header-panel {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
       color: #ffffff;
-      padding: 1.5rem 2rem;
-      border-bottom: 4px solid var(--accent-color);
+      padding: 2rem;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 4px solid var(--accent);
+    }
+
+    .header-content h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .header-content p {
+      margin-top: 0.35rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .badge-institucional {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #e2e8f0;
+    }
+
+    /* Painel de Filtros e Busca */
+    .filter-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+    }
+
+    .filter-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr 1fr;
+      gap: 1.25rem;
+      align-items: end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .form-group label {
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper svg {
+      position: absolute;
+      left: 0.85rem;
+      width: 1.1rem;
+      height: 1.1rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .input-wrapper input,
+    .form-group select {
+      width: 100%;
+      height: 44px;
+      padding: 0 0.85rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.925rem;
+      color: var(--text-primary);
+      background-color: #fff;
+      transition: all 0.2s ease;
+    }
+
+    .input-wrapper input {
+      padding-left: 2.5rem;
+    }
+
+    .input-wrapper input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    .actions-group {
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    .btn {
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: #ffffff;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background-color: #f8fafc;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background-color: #e2e8f0;
+      color: var(--text-primary);
+    }
+
+    /* Feedback de Resultados */
+    .results-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      padding: 0 0.25rem;
+    }
+
+    /* Cards de Candidatos */
+    .candidatos-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .candidato-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .candidato-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: #cbd5e1;
+    }
+
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      background: #fafafa;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .candidato-identificacao h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .candidato-codigo {
+      display: inline-block;
+      margin-top: 0.2rem;
+      font-size: 0.8rem;
+      font-family: monospace;
+      background: #e2e8f0;
+      color: var(--text-secondary);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .info-section-title {
+      font-size: 0.775rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .dados-pessoais-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.85rem 1.25rem;
+    }
+
+    .dado-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .dado-item span.rotulo {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .dado-item span.valor {
+      font-size: 0.925rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* Grid do TAF */
+    .taf-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .taf-card-item {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.6rem;
+    }
+
+    .taf-prova {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .taf-detalhe {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
-    .header h1 {
-      font-size: 1.5rem;
-      font-weight: 600;
+    .taf-marca {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
     }
 
-    .search-box {
-      padding: 2rem;
-      background-color: #f1f5f9;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .search-form {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .search-form input {
-      flex: 1;
-      padding: 0.75rem 1rem;
-      font-size: 1rem;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      outline: none;
-    }
-
-    .search-form input:focus {
-      border-color: var(--accent-color);
-      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
-    }
-
-    .btn {
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-      font-weight: 600;
-      border-radius: 6px;
-      cursor: pointer;
-      border: none;
-      background-color: var(--accent-color);
-      color: #ffffff;
-      transition: background 0.2s;
-    }
-
-    .btn:hover {
-      background-color: #0369a1;
-    }
-
-    .results-container {
-      padding: 2rem;
-    }
-
-    .candidato-card {
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      background-color: #fff;
-    }
-
-    .candidato-card h3 {
-      color: var(--primary-color);
-      margin-bottom: 0.5rem;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 0.5rem;
-    }
-
-    .grid-info {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 0.75rem;
-      margin-top: 1rem;
-    }
-
-    .info-item {
-      font-size: 0.9rem;
-    }
-
-    .info-item strong {
-      color: #475569;
-    }
-
+    /* Badges */
     .badge {
-      display: inline-block;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: bold;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
     }
 
-    .badge-apto { background-color: #dcfce7; color: #166534; }
-    .badge-inapto { background-color: #fee2e2; color: #991b1b; }
-    .badge-nd { background-color: #f1f5f9; color: #64748b; }
+    .badge-apto {
+      background-color: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid var(--success-border);
+    }
 
-    .loading, .empty {
-      text-align: center;
-      padding: 2rem;
+    .badge-inapto {
+      background-color: var(--danger-bg);
+      color: var(--danger-text);
+      border: 1px solid var(--danger-border);
+    }
+
+    .badge-nd {
+      background-color: #f1f5f9;
       color: #64748b;
+      border: 1px solid #cbd5e1;
+    }
+
+    /* Estados de Feedback */
+    .state-box {
+      text-align: center;
+      padding: 3.5rem 1.5rem;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1.5px dashed var(--border);
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .state-box svg {
+      width: 40px;
+      height: 40px;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(2, 132, 199, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .header-panel {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      .actions-group {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <div class="header">
-      <div>
-        <h1>Consulta de Candidatos & TAF</h1>
-        <p style="font-size: 0.875rem; color: #94a3b8;">Pesquise por Código ID, Nome Completo ou CPF</p>
+  <div class="main-wrapper">
+    <!-- Cabeçalho -->
+    <header class="header-panel">
+      <div class="header-content">
+        <h1>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Consulta de Candidatos & TAF
+        </h1>
+        <p>Centro de Recrutamento e Seleção — CBMPR</p>
       </div>
-    </div>
+      <span class="badge-institucional">Acesso Restrito / Consulta</span>
+    </header>
 
-    <div class="search-box">
-      <form class="search-form" id="formBusca">
-        <input type="text" id="termoBusca" placeholder="Digite o Código ID (ex: CND-2026-001), Nome ou CPF..." required>
-        <button type="submit" class="btn">Buscar</button>
+    <!-- Formulário com Filtros de Refinamento -->
+    <section class="filter-card">
+      <div class="filter-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Parâmetros e Refinamento de Busca
+      </div>
+
+      <form id="formBusca">
+        <div class="form-grid">
+          <!-- Campo Principal -->
+          <div class="form-group">
+            <label for="termoBusca">Identificação do Candidato</label>
+            <div class="input-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="termoBusca" placeholder="Código ID, Nome Completo ou CPF..." required autocomplete="off">
+            </div>
+          </div>
+
+          <!-- Filtro de Refinamento: Situação no TAF -->
+          <div class="form-group">
+            <label for="filtroSituacao">Refinamento TAF</label>
+            <select id="filtroSituacao">
+              <option value="todos">Todos os Status</option>
+              <option value="apto">Apenas Apto Geral</option>
+              <option value="inapto">Apenas Inapto Geral</option>
+            </select>
+          </div>
+
+          <!-- Ações -->
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <div class="actions-group">
+              <button type="submit" class="btn btn-primary">
+                Pesquisar
+              </button>
+              <button type="button" id="btnLimpar" class="btn btn-secondary" title="Limpar Campos">
+                Limpar
+              </button>
+            </div>
+          </div>
+        </div>
       </form>
+    </section>
+
+    <!-- Indicador de Status dos Resultados -->
+    <div class="results-meta" id="resultsMeta" style="display: none;">
+      <span id="contadorResultados">0 registro(s) encontrado(s)</span>
+      <span>Base Oficial Atualizada</span>
     </div>
 
-    <div class="results-container" id="resultados">
-      <div class="empty">Digite um parâmetro acima e clique em "Buscar".</div>
-    </div>
+    <!-- Lista de Resultados -->
+    <main class="candidatos-list" id="resultados">
+      <div class="state-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <p>Preencha os campos de refinamento acima e clique em <strong>Pesquisar</strong> para listar os candidatos.</p>
+      </div>
+    </main>
   </div>
 
   <script>
     const formBusca = document.getElementById('formBusca');
+    const inputTermo = document.getElementById('termoBusca');
+    const filtroSituacao = document.getElementById('filtroSituacao');
+    const btnLimpar = document.getElementById('btnLimpar');
     const resultadosDiv = document.getElementById('resultados');
+    const resultsMeta = document.getElementById('resultsMeta');
+    const contadorResultados = document.getElementById('contadorResultados');
 
-    // Substitua pela sua URL real do Render
     const API_URL = 'https://cbm-palz.onrender.com/api/candidatos/buscar';
+    let candidatosEmCache = [];
 
+    // Submissão do Formulário
     formBusca.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const termo = document.getElementById('termoBusca').value.trim();
+      const termo = inputTermo.value.trim();
 
-      resultadosDiv.innerHTML = '<div class="loading">Consultando banco de dados...</div>';
+      if (!termo) return;
+
+      // Estado de Carregamento
+      resultsMeta.style.display = 'none';
+      resultadosDiv.innerHTML = `
+        <div class="state-box">
+          <div class="spinner"></div>
+          <p>Consultando base de dados do CRS...</p>
+        </div>
+      `;
 
       try {
         const response = await fetch(`${API_URL}?termo=${encodeURIComponent(termo)}`);
         
         if (!response.ok) {
-          throw new Error('Erro ao realizar consulta');
+          throw new Error('Falha na resposta do servidor.');
         }
 
-        const candidatos = await response.json();
-
-        if (candidatos.length === 0) {
-          resultadosDiv.innerHTML = '<div class="empty">Nenhum candidato encontrado com o termo informado.</div>';
-          return;
-        }
-
-        renderResultados(candidatos);
+        candidatosEmCache = await response.json();
+        aplicarFiltrosERenderizar();
 
       } catch (error) {
-        console.error('Erro:', error);
-        resultadosDiv.innerHTML = '<div class="empty" style="color: #991b1b;">Erro ao conectar com o servidor. Verifique se a API está online.</div>';
+        console.error('Erro na consulta:', error);
+        resultadosDiv.innerHTML = `
+          <div class="state-box" style="border-color: var(--danger-border); color: var(--danger-text);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--danger-text);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <p><strong>Não foi possível consultar os dados.</strong><br>Verifique sua conexão ou se a API está online.</p>
+          </div>
+        `;
       }
     });
 
-    function renderResultados(candidatos) {
-      resultadosDiv.innerHTML = candidatos.map(c => `
-        <div class="candidato-card">
-          <h3>${c.nome_completo} <small style="font-size: 0.8rem; color: #64748b;">(${c.codigo_candidato})</small></h3>
-          
-          <div class="grid-info">
-            <div class="info-item"><strong>CPF:</strong> ${c.cpf}</div>
-            <div class="info-item"><strong>E-mail:</strong> ${c.email}</div>
-            <div class="info-item"><strong>Telefone:</strong> ${c.telefone}</div>
-            <div class="info-item"><strong>Cidade/UF:</strong> ${c.cidade} / ${c.estado}</div>
-          </div>
+    // Filtro dinâmico sem precisar bater na API de novo
+    filtroSituacao.addEventListener('change', () => {
+      if (candidatosEmCache.length > 0) {
+        aplicarFiltrosERenderizar();
+      }
+    });
 
-          <h4 style="margin-top: 1.25rem; font-size: 1rem; color: var(--accent-color);">Desempenho no TAF</h4>
-          <div class="grid-info">
-            <div class="info-item">
-              <strong>Corrida 2.400m:</strong> ${c.corrida_tempo || 'N/A'} 
-              ${getBadge(c.corrida_situacao)}
-            </div>
-            <div class="info-item">
-              <strong>Barra Fixa:</strong> ${c.barra_qtd || 'N/A'} 
-              ${getBadge(c.barra_situacao)}
-            </div>
-            <div class="info-item">
-              <strong>Subida na Corda:</strong> ${c.corda_resultado || 'N/A'} 
-              ${getBadge(c.corda_situacao)}
-            </div>
-            <div class="info-item">
-              <strong>Trave Suspensa:</strong> ${c.trave_resultado || 'N/A'} 
-              ${getBadge(c.trave_situacao)}
-            </div>
-          </div>
+    // Limpar filtros e tela
+    btnLimpar.addEventListener('click', () => {
+      inputTermo.value = '';
+      filtroSituacao.value = 'todos';
+      candidatosEmCache = [];
+      resultsMeta.style.display = 'none';
+      resultadosDiv.innerHTML = `
+        <div class="state-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <p>Preencha os campos de refinamento acima e clique em <strong>Pesquisar</strong> para listar os candidatos.</p>
         </div>
-      `).join('');
+      `;
+      inputTermo.focus();
+    });
+
+    function aplicarFiltrosERenderizar() {
+      const situacaoSelecionada = filtroSituacao.value;
+
+      let filtrados = [...candidatosEmCache];
+
+      if (situacaoSelecionada !== 'todos') {
+        filtrados = filtrados.filter(c => {
+          const provas = [c.corrida_situacao, c.barra_situacao, c.corda_situacao, c.trave_situacao];
+          const temInapto = provas.some(s => s && s.toLowerCase() === 'inapto');
+          
+          if (situacaoSelecionada === 'inapto') return temInapto;
+          if (situacaoSelecionada === 'apto') return !temInapto && provas.every(s => s && s.toLowerCase() === 'apto');
+          return true;
+        });
+      }
+
+      // Atualiza Metadados
+      resultsMeta.style.display = 'flex';
+      contadorResultados.innerText = `${filtrados.length} registro(s) encontrado(s)`;
+
+      if (filtrados.length === 0) {
+        resultadosDiv.innerHTML = `
+          <div class="state-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <p>Nenhum candidato localizado com os filtros selecionados.</p>
+          </div>
+        `;
+        return;
+      }
+
+      renderCards(filtrados);
+    }
+
+    function renderCards(candidatos) {
+      resultadosDiv.innerHTML = candidatos.map(c => {
+        // Checagem de aptidão geral
+        const provas = [c.corrida_situacao, c.barra_situacao, c.corda_situacao, c.trave_situacao];
+        const statusGeral = provas.some(s => s === 'Inapto') 
+          ? '<span class="badge badge-inapto">Inapto no TAF</span>' 
+          : (provas.every(s => s === 'Apto') ? '<span class="badge badge-apto">Apto Geral</span>' : '<span class="badge badge-nd">Em Avaliação</span>');
+
+        return `
+          <article class="candidato-card">
+            <header class="card-header">
+              <div class="candidato-identificacao">
+                <h3>${c.nome_completo || 'Nome não informado'}</h3>
+                <span class="candidato-codigo">${c.codigo_candidato || 'SEM CÓDIGO'}</span>
+              </div>
+              <div>${statusGeral}</div>
+            </header>
+
+            <div class="card-body">
+              <!-- Dados Gerais -->
+              <div>
+                <div class="info-section-title">Informações Cadastrais</div>
+                <div class="dados-pessoais-grid">
+                  <div class="dado-item">
+                    <span class="rotulo">CPF</span>
+                    <span class="valor">${c.cpf || '—'}</span>
+                  </div>
+                  <div class="dado-item">
+                    <span class="rotulo">E-mail</span>
+                    <span class="valor">${c.email || '—'}</span>
+                  </div>
+                  <div class="dado-item">
+                    <span class="rotulo">Telefone</span>
+                    <span class="valor">${c.telefone || '—'}</span>
+                  </div>
+                  <div class="dado-item">
+                    <span class="rotulo">Localidade</span>
+                    <span class="valor">${c.cidade || '—'} / ${c.estado || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Resultados do TAF -->
+              <div>
+                <div class="info-section-title">Desempenho no Teste de Aptidão Física (TAF)</div>
+                <div class="taf-grid">
+                  <div class="taf-card-item">
+                    <span class="taf-prova">Corrida 2.400m</span>
+                    <div class="taf-detalhe">
+                      <span class="taf-marca">${c.corrida_tempo || '—'}</span>
+                      ${getBadge(c.corrida_situacao)}
+                    </div>
+                  </div>
+
+                  <div class="taf-card-item">
+                    <span class="taf-prova">Barra Fixa</span>
+                    <div class="taf-detalhe">
+                      <span class="taf-marca">${c.barra_qtd ? c.barra_qtd + ' reps' : '—'}</span>
+                      ${getBadge(c.barra_situacao)}
+                    </div>
+                  </div>
+
+                  <div class="taf-card-item">
+                    <span class="taf-prova">Subida na Corda</span>
+                    <div class="taf-detalhe">
+                      <span class="taf-marca">${c.corda_resultado || '—'}</span>
+                      ${getBadge(c.corda_situacao)}
+                    </div>
+                  </div>
+
+                  <div class="taf-card-item">
+                    <span class="taf-prova">Trave Suspensa</span>
+                    <div class="taf-detalhe">
+                      <span class="taf-marca">${c.trave_resultado || '—'}</span>
+                      ${getBadge(c.trave_situacao)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
     }
 
     function getBadge(situacao) {
-      if (situacao === 'Apto') return '<span class="badge badge-apto">Apto</span>';
-      if (situacao === 'Inapto') return '<span class="badge badge-inapto">Inapto</span>';
-      return '<span class="badge badge-nd">N/D</span>';
+      if (!situacao) return '<span class="badge badge-nd">N/D</span>';
+      const s = situacao.toLowerCase();
+      if (s === 'apto') return '<span class="badge badge-apto">Apto</span>';
+      if (s === 'inapto') return '<span class="badge badge-inapto">Inapto</span>';
+      return `<span class="badge badge-nd">${situacao}</span>`;
     }
   </script>
 </body>
