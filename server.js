@@ -185,13 +185,12 @@ app.put('/api/candidatos/:id', async (req, res) => {
   }
 });
 
-// ==========================================
+/ ==========================================
 // ROTA DO DASHBOARD: Tabela `candidato`
 // ==========================================
-
 app.get('/api/dashboard', async (req, res) => {
   try {
-    // 1. Total e Média de Idade
+    // 1. Métricas Gerais (Total e Média de Idade)
     const [resumoRows] = await pool.query(`
       SELECT 
         COUNT(*) AS totalInscritos,
@@ -219,7 +218,7 @@ app.get('/api/dashboard', async (req, res) => {
       ORDER BY FIELD(faixa, '18 a 20', '21 a 25', '26 a 30', '31 a 35', '36+')
     `);
 
-    // 3. Estados
+    // 3. Distribuição por Estado (UF)
     const [estadosRows] = await pool.query(`
       SELECT 
         COALESCE(NULLIF(TRIM(estado), ''), 'N/I') AS estado,
@@ -230,7 +229,7 @@ app.get('/api/dashboard', async (req, res) => {
       ORDER BY total DESC
     `);
 
-    // 4. Sexo
+    // 4. Distribuição por Sexo
     const [sexoRows] = await pool.query(`
       SELECT 
         COALESCE(NULLIF(TRIM(sexo), ''), 'N/I') AS sexo,
@@ -240,13 +239,14 @@ app.get('/api/dashboard', async (req, res) => {
       ORDER BY total DESC
     `);
 
-    // 5. Étnico-Racial
-    const [etnicoRows] = await pool.query(`
+    // 5. Cidades do Paraná (PR) - Substitui a análise étnico-racial
+    const [cidadesPRRows] = await pool.query(`
       SELECT 
-        COALESCE(NULLIF(TRIM(declaracao_etnico_racial), ''), 'N/I') AS raca,
+        COALESCE(NULLIF(TRIM(municipio), ''), 'Não Informado') AS cidade,
         COUNT(*) AS total
       FROM candidato
-      GROUP BY declaracao_etnico_racial
+      WHERE estado = 'PR'
+      GROUP BY municipio
       ORDER BY total DESC
     `);
 
@@ -255,10 +255,10 @@ app.get('/api/dashboard', async (req, res) => {
       faixasEtarias: faixasRows,
       estados: estadosRows,
       sexo: sexoRows,
-      etnicoRacial: etnicoRows
+      cidadesPR: cidadesPRRows
     });
   } catch (err) {
-    console.error('ERRO DETALHADO na rota /api/dashboard:', err);
+    console.error('ERRO na rota /api/dashboard:', err);
     res.status(500).json({ error: 'Erro ao consultar dashboard', detail: err.message });
   }
 });
