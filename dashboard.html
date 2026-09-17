@@ -14,6 +14,7 @@
       --primary: #3b82f6;
       --secondary: #10b981;
       --accent: #f59e0b;
+      --purple: #8b5cf6;
       --border: #334155;
     }
 
@@ -158,7 +159,7 @@
       <div class="val" id="kpi-estados">0</div>
     </div>
     <div class="kpi-card">
-      <div class="label">Top Cidade (PR)</div>
+      <div class="label">Top Município (PR)</div>
       <div class="val" id="kpi-top-cidade" style="font-size: 1.3rem; margin-top: 10px;">-</div>
     </div>
   </section>
@@ -180,7 +181,7 @@
     </div>
 
     <div class="card-chart">
-      <h3>Inscritos por Cidade (Paraná - PR)</h3>
+      <h3>Inscritos por Município (PR)</h3>
       <div class="chart-container">
         <canvas id="chartCidadesPR"></canvas>
       </div>
@@ -215,7 +216,6 @@
   </section>
 
   <script>
-    // Aponta diretamente para a API Node no Render
     const API_URL = 'https://cbm-palz.onrender.com/api/dashboard';
 
     Chart.defaults.color = '#94a3b8';
@@ -243,7 +243,7 @@
         renderizarTabela(data);
       } catch (err) {
         console.error('Falha de conexão com a API:', err);
-        status.textContent = '● Servidor inicializando (aguarde 30s)...';
+        status.textContent = '● Erro ao carregar dados';
         status.style.color = '#ef4444';
       }
     }
@@ -253,22 +253,27 @@
       document.getElementById('kpi-idade').textContent = (data.resumo?.mediaIdade ?? 0) + ' anos';
       document.getElementById('kpi-estados').textContent = data.estados?.length ?? 0;
       
-      const topCidade = (data.cidadesPR && data.cidadesPR.length > 0) ? data.cidadesPR[0] : null;
-      document.getElementById('kpi-top-cidade').textContent = topCidade ? `${topCidade.cidade} (${topCidade.total})` : '-';
+      const listaCidades = data.cidadesPR || data.cidades || [];
+      const topCidade = listaCidades.length > 0 ? listaCidades[0] : null;
+      document.getElementById('kpi-top-cidade').textContent = topCidade ? `${topCidade.cidade || topCidade.municipio} (${topCidade.total})` : '-';
     }
 
     function criarOuAtualizarChart(id, config) {
       if (chartInstances[id]) {
         chartInstances[id].destroy();
       }
-      const canvas = document.getElementById(id);
+      let canvas = document.getElementById(id);
+      // Fallback caso o canvas ainda esteja com o ID antigo
+      if (!canvas && id === 'chartCidadesPR') {
+        canvas = document.getElementById('chartEtnico');
+      }
       if (canvas) {
         chartInstances[id] = new Chart(canvas, config);
       }
     }
 
     function renderizarGraficos(data) {
-      // 1. Sexo (Doughnut)
+      // 1. Sexo
       criarOuAtualizarChart('chartSexo', {
         type: 'doughnut',
         data: {
@@ -282,7 +287,7 @@
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // 2. Faixa Etária (Barra Vertical)
+      // 2. Faixa Etária
       criarOuAtualizarChart('chartIdade', {
         type: 'bar',
         data: {
@@ -305,14 +310,15 @@
         }
       });
 
-      // 3. Cidades do PR (Barra Horizontal)
+      // 3. Municípios do Paraná (PR) - Leitura flexível
+      const cidades = data.cidadesPR || data.cidades || [];
       criarOuAtualizarChart('chartCidadesPR', {
         type: 'bar',
         data: {
-          labels: (data.cidadesPR || []).map(c => c.cidade),
+          labels: cidades.map(c => c.cidade || c.municipio || 'Não Informado'),
           datasets: [{
             label: 'Inscritos',
-            data: (data.cidadesPR || []).map(c => c.total),
+            data: cidades.map(c => c.total),
             backgroundColor: '#f59e0b',
             borderRadius: 4
           }]
@@ -323,13 +329,17 @@
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { beginAtZero: true, grid: { color: '#334155' } },
+            x: { 
+              beginAtZero: true, 
+              ticks: { stepSize: 1, precision: 0 },
+              grid: { color: '#334155' } 
+            },
             y: { grid: { display: false } }
           }
         }
       });
 
-      // 4. Estados (Barra Horizontal)
+      // 4. Estados
       criarOuAtualizarChart('chartEstados', {
         type: 'bar',
         data: {
