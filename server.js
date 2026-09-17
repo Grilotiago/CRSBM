@@ -1,8 +1,11 @@
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
+
+// 1. Configurações Globais
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -10,6 +13,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Permite servir o dashboard.html diretamente pelo servidor
+app.use(express.static(__dirname));
+
+// 2. Pool de Conexão MariaDB
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'cbmcrs-lime-clay.sage.cloud.layerbase.dev',
   user: process.env.DB_USER || 'root',
@@ -19,7 +26,11 @@ const pool = mysql.createPool({
   ssl: { rejectUnauthorized: false }
 });
 
-// 1. ROTA DE LISTAGEM / BUSCA (Soluciona o erro 404 ao abrir a busca)
+// ==========================================
+// ROTAS DA TABELA: `candidatos` (Com TAF)
+// ==========================================
+
+// Rota de Listagem / Busca
 app.get('/api/candidatos', async (req, res) => {
   try {
     const { termo } = req.query;
@@ -52,29 +63,26 @@ app.get('/api/candidatos', async (req, res) => {
     `;
 
     const params = [];
-
     if (termo) {
       sql += ` WHERE c.codigo_candidato LIKE ? OR c.nome_completo LIKE ? OR c.cpf LIKE ?`;
       const t = `%${termo.trim()}%`;
       params.push(t, t, t);
     }
-
     sql += ` ORDER BY c.id DESC`;
 
     const [rows] = await pool.query(sql, params);
     res.json(rows);
   } catch (err) {
-    console.error('Erro ao consultar banco de dados:', err);
-    res.status(500).json({ error: 'Erro interno ao realizar a consulta.' });
+    console.error('Erro ao consultar candidatos:', err);
+    res.status(500).json({ error: 'Erro interno ao consultar candidatos.', detail: err.message });
   }
 });
 
-// 2. ROTA DE CADASTRO (POST)
+// Rota de Cadastro (POST)
 app.post('/api/candidatos', async (req, res) => {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-
     const {
       idCandidato, nomeCompleto, cpf, dataNascimento, telefone, email,
       cep, endereco, numero, complemento, bairro, cidade, estado,
@@ -87,7 +95,6 @@ app.post('/api/candidatos', async (req, res) => {
       (codigo_candidato, nome_completo, cpf, data_nascimento, telefone, email, cep, logradouro, numero, complemento, bairro, cidade, estado)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
     const [resCandidato] = await connection.execute(sqlCandidato, [
       idCandidato, nomeCompleto, cpf, dataNascimento, telefone, email,
       cep, endereco, numero, complemento || null, bairro, cidade, estado
@@ -100,7 +107,6 @@ app.post('/api/candidatos', async (req, res) => {
       (candidato_id, corrida_tempo, corrida_situacao, barra_qtd, barra_situacao, corda_resultado, corda_situacao, trave_resultado, trave_situacao)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
     await connection.execute(sqlTaf, [
       candidatoId,
       corridaTempo || null, corridaSituacao || null,
@@ -111,7 +117,6 @@ app.post('/api/candidatos', async (req, res) => {
 
     await connection.commit();
     res.status(201).json({ message: 'Candidato e TAF cadastrados com sucesso!' });
-
   } catch (err) {
     await connection.rollback();
     console.error('Erro ao salvar no banco:', err);
@@ -121,14 +126,12 @@ app.post('/api/candidatos', async (req, res) => {
   }
 });
 
-// 3. ROTA DE EDIÇÃO / ATUALIZAÇÃO (PUT)
+// Rota de Atualização (PUT)
 app.put('/api/candidatos/:id', async (req, res) => {
   const { id } = req.params;
   const connection = await pool.getConnection();
-
   try {
     await connection.beginTransaction();
-
     const {
       idCandidato, nomeCompleto, cpf, dataNascimento, telefone, email,
       cep, endereco, numero, complemento, bairro, cidade, estado,
@@ -136,7 +139,6 @@ app.put('/api/candidatos/:id', async (req, res) => {
       cordaResultado, cordaSituacao, traveResultado, traveSituacao
     } = req.body;
 
-    // Atualiza Candidato
     const sqlCandidato = `
       UPDATE candidatos 
       SET codigo_candidato = ?, nome_completo = ?, cpf = ?, data_nascimento = ?, 
@@ -144,14 +146,12 @@ app.put('/api/candidatos/:id', async (req, res) => {
           complemento = ?, bairro = ?, cidade = ?, estado = ?
       WHERE id = ? OR codigo_candidato = ?
     `;
-
     await connection.execute(sqlCandidato, [
       idCandidato, nomeCompleto, cpf, dataNascimento, telefone, email,
       cep, endereco, numero, complemento || null, bairro, cidade, estado,
       id, id
     ]);
 
-    // Atualiza ou Insere TAF
     const sqlTaf = `
       INSERT INTO taf_resultados 
       (candidato_id, corrida_tempo, corrida_situacao, barra_qtd, barra_situacao, corda_resultado, corda_situacao, trave_resultado, trave_situacao)
@@ -166,7 +166,6 @@ app.put('/api/candidatos/:id', async (req, res) => {
         trave_resultado = VALUES(trave_resultado),
         trave_situacao = VALUES(trave_situacao)
     `;
-
     await connection.execute(sqlTaf, [
       id, id,
       corridaTempo || null, corridaSituacao || null,
@@ -177,7 +176,6 @@ app.put('/api/candidatos/:id', async (req, res) => {
 
     await connection.commit();
     res.json({ message: 'Dados do candidato e TAF atualizados com sucesso!' });
-
   } catch (err) {
     await connection.rollback();
     console.error('Erro ao atualizar registro:', err);
@@ -187,10 +185,12 @@ app.put('/api/candidatos/:id', async (req, res) => {
   }
 });
 
-// ROTA DO DASHBOARD (Consulta direta à tabela 'candidato')
+// ==========================================
+// ROTA DO DASHBOARD: Tabela `candidato`
+// ==========================================
 app.get('/api/dashboard', async (req, res) => {
   try {
-    // 1. Total e Média de Idade
+    // 1. Métricas Gerais (Total e Média de Idade)
     const [resumoRows] = await pool.query(`
       SELECT 
         COUNT(*) AS totalInscritos,
@@ -218,7 +218,7 @@ app.get('/api/dashboard', async (req, res) => {
       ORDER BY FIELD(faixa, '18 a 20', '21 a 25', '26 a 30', '31 a 35', '36+')
     `);
 
-    // 3. Estados
+    // 3. Distribuição por Estado (UF)
     const [estadosRows] = await pool.query(`
       SELECT 
         COALESCE(NULLIF(TRIM(estado), ''), 'N/I') AS estado,
@@ -229,7 +229,7 @@ app.get('/api/dashboard', async (req, res) => {
       ORDER BY total DESC
     `);
 
-    // 4. Sexo
+    // 4. Distribuição por Sexo
     const [sexoRows] = await pool.query(`
       SELECT 
         COALESCE(NULLIF(TRIM(sexo), ''), 'N/I') AS sexo,
@@ -239,7 +239,7 @@ app.get('/api/dashboard', async (req, res) => {
       ORDER BY total DESC
     `);
 
-    // 5. Étnico-Racial
+    // 5. Declaração Étnico-Racial
     const [etnicoRows] = await pool.query(`
       SELECT 
         COALESCE(NULLIF(TRIM(declaracao_etnico_racial), ''), 'N/I') AS raca,
@@ -257,10 +257,11 @@ app.get('/api/dashboard', async (req, res) => {
       etnicoRacial: etnicoRows
     });
   } catch (err) {
-    console.error('Erro ao consultar /api/dashboard:', err);
-    res.status(500).json({ error: 'Erro interno no dashboard', detail: err.message });
+    console.error('Erro ao consultar /api/dashboard na tabela candidato:', err);
+    res.status(500).json({ error: 'Erro ao consultar dashboard', detail: err.message });
   }
 });
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
