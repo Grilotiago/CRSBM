@@ -1,3 +1,6 @@
+HTML
+
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -45,7 +48,7 @@
     body {
       background-color: var(--bg);
       color: var(--text-primary);
-      padding: 2rem 1rem;
+      padding: 2.5rem 1rem;
       min-height: 100vh;
       display: flex;
       justify-content: center;
@@ -70,6 +73,7 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 4px solid var(--accent);
+      gap: 1rem;
     }
 
     .header-content h1 {
@@ -87,16 +91,45 @@
       color: var(--text-muted);
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .btn-voltar {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.5rem 0.9rem;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: var(--radius-sm);
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-voltar:hover {
+      background: rgba(255, 255, 255, 0.22);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateX(-2px);
+    }
+
     .badge-institucional {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 0.4rem 0.8rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 0.45rem 0.8rem;
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: #e2e8f0;
+      color: #cbd5e1;
     }
 
     .filter-card {
@@ -402,8 +435,11 @@
       }
       .header-panel {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 0.85rem;
+        align-items: stretch;
+        gap: 1.25rem;
+      }
+      .header-actions {
+        justify-content: space-between;
       }
       .actions-group {
         width: 100%;
@@ -422,7 +458,14 @@
         </h1>
         <p>Centro de Recrutamento e Seleção — CBMPR</p>
       </div>
-      <span class="badge-institucional">Acesso Oficial</span>
+
+      <div class="header-actions">
+        <button type="button" class="btn-voltar" onclick="voltarTelaAnterior()" title="Voltar para a tela anterior">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Voltar
+        </button>
+        <span class="badge-institucional">Acesso Oficial</span>
+      </div>
     </header>
 
     <section class="filter-card">
@@ -439,7 +482,7 @@
           <div class="form-group">
             <label for="filtroSituacao">Refinamento TAF</label>
             <select id="filtroSituacao">
-              <option value="todos">Todos os Resultados</option>
+              <option value="todos">Todos os Status</option>
               <option value="apto">Apenas Apto Geral</option>
               <option value="inapto">Apenas Inapto Geral</option>
             </select>
@@ -458,7 +501,7 @@
 
     <div class="results-meta" id="resultsMeta" style="display: none;">
       <span id="contadorResultados">0 registro(s)</span>
-      <span>Base Sincronizada</span>
+      <span>Base Oficial CBMPR</span>
     </div>
 
     <main class="candidatos-list" id="resultados">
@@ -470,6 +513,17 @@
   </div>
 
   <script>
+    function voltarTelaAnterior() {
+      if (document.referrer && document.referrer !== window.location.href) {
+        window.history.back();
+      } else if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        // Se a página foi aberta diretamente em nova guia ou popup
+        window.close();
+      }
+    }
+
     const formBusca = document.getElementById('formBusca');
     const inputTermo = document.getElementById('termoBusca');
     const filtroSituacao = document.getElementById('filtroSituacao');
@@ -478,7 +532,7 @@
     const resultsMeta = document.getElementById('resultsMeta');
     const contadorResultados = document.getElementById('contadorResultados');
 
-    const API_URL = 'https://cbm-palz.onrender.com/api/candidatos/buscar';
+    const API_URL = 'https://cbm-palz.onrender.com/api/candidatos';
     let candidatosEmCache = [];
 
     formBusca.addEventListener('submit', async (e) => {
@@ -496,13 +550,7 @@
       `;
 
       try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ termo })
-        });
+        const response = await fetch(`${API_URL}?termo=${encodeURIComponent(termo)}`);
         
         if (!response.ok) {
           const erroTexto = await response.text();
@@ -550,7 +598,12 @@
 
       if (situacao !== 'todos') {
         filtrados = filtrados.filter(c => {
-          const provas = [c.corrida_situacao, c.barra_situacao, c.corda_situacao, c.trave_situacao];
+          const provas = [
+            c.corridaSituacao || c.corrida_situacao,
+            c.barraSituacao || c.barra_situacao,
+            c.cordaSituacao || c.corda_situacao,
+            c.traveSituacao || c.trave_situacao
+          ];
           const temInapto = provas.some(s => s && s.toLowerCase() === 'inapto');
           if (situacao === 'inapto') return temInapto;
           if (situacao === 'apto') return !temInapto && provas.every(s => s && s.toLowerCase() === 'apto');
@@ -576,17 +629,22 @@
 
     function renderCards(candidatos) {
       resultadosDiv.innerHTML = candidatos.map(c => {
-        const provas = [c.corrida_situacao, c.barra_situacao, c.corda_situacao, c.trave_situacao];
-        const statusGeral = provas.some(s => s === 'Inapto') 
+        const corridaSit = c.corridaSituacao || c.corrida_situacao;
+        const barraSit = c.barraSituacao || c.barra_situacao;
+        const cordaSit = c.cordaSituacao || c.corda_situacao;
+        const traveSit = c.traveSituacao || c.trave_situacao;
+
+        const provas = [corridaSit, barraSit, cordaSit, traveSit];
+        const statusGeral = provas.some(s => s && s.toLowerCase() === 'inapto') 
           ? '<span class="badge badge-inapto">Inapto no TAF</span>' 
-          : (provas.every(s => s === 'Apto') ? '<span class="badge badge-apto">Apto Geral</span>' : '<span class="badge badge-nd">Em Avaliação</span>');
+          : (provas.every(s => s && s.toLowerCase() === 'apto') ? '<span class="badge badge-apto">Apto Geral</span>' : '<span class="badge badge-nd">Em Avaliação</span>');
 
         return `
           <article class="candidato-card">
             <header class="card-header">
               <div class="candidato-identificacao">
-                <h3>${c.nome_completo || 'Sem Nome'}</h3>
-                <span class="candidato-codigo">${c.codigo_candidato || 'NÃO INFORMADO'}</span>
+                <h3>${c.nomeCompleto || c.nome_completo || 'Sem Nome'}</h3>
+                <span class="candidato-codigo">${c.idCandidato || c.codigo_candidato || 'NÃO INFORMADO'}</span>
               </div>
               <div>${statusGeral}</div>
             </header>
@@ -620,32 +678,32 @@
                   <div class="taf-card-item">
                     <span class="taf-prova">Corrida 2.400m</span>
                     <div class="taf-detalhe">
-                      <span class="taf-marca">${c.corrida_tempo || '—'}</span>
-                      ${getBadge(c.corrida_situacao)}
+                      <span class="taf-marca">${c.corridaTempo || c.corrida_tempo || '—'}</span>
+                      ${getBadge(corridaSit)}
                     </div>
                   </div>
 
                   <div class="taf-card-item">
                     <span class="taf-prova">Barra Fixa</span>
                     <div class="taf-detalhe">
-                      <span class="taf-marca">${c.barra_qtd ? c.barra_qtd + ' reps' : '—'}</span>
-                      ${getBadge(c.barra_situacao)}
+                      <span class="taf-marca">${(c.barraQtd !== undefined && c.barraQtd !== null) ? c.barraQtd + ' reps' : (c.barra_qtd ? c.barra_qtd + ' reps' : '—')}</span>
+                      ${getBadge(barraSit)}
                     </div>
                   </div>
 
                   <div class="taf-card-item">
                     <span class="taf-prova">Subida na Corda</span>
                     <div class="taf-detalhe">
-                      <span class="taf-marca">${c.corda_resultado || '—'}</span>
-                      ${getBadge(c.corda_situacao)}
+                      <span class="taf-marca">${c.cordaResultado || c.corda_resultado || '—'}</span>
+                      ${getBadge(cordaSit)}
                     </div>
                   </div>
 
                   <div class="taf-card-item">
                     <span class="taf-prova">Trave Suspensa</span>
                     <div class="taf-detalhe">
-                      <span class="taf-marca">${c.trave_resultado || '—'}</span>
-                      ${getBadge(c.trave_situacao)}
+                      <span class="taf-marca">${c.traveResultado || c.trave_resultado || '—'}</span>
+                      ${getBadge(traveSit)}
                     </div>
                   </div>
                 </div>
