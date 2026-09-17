@@ -199,87 +199,74 @@
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, sans-serif';
 
+    // Instâncias dos gráficos para permitir atualização limpa
+    let chartInstances = {};
+
     async function carregarDashboard() {
       const status = document.getElementById('status-conn');
       try {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error('Falha ao obter dados da API');
+        // Cache bypass adicionando timestamp na URL
+        const res = await fetch(`${API_URL}?_t=${Date.now()}`);
+        if (!res.ok) {
+          throw new Error(`Status da resposta: ${res.status} (${res.statusText})`);
+        }
         const data = await res.json();
 
-        status.textContent = '● Base MariaDB Conectada';
+        status.textContent = '● Conectado ao MariaDB';
         status.style.color = '#10b981';
 
         atualizarKPIs(data);
         renderizarGraficos(data);
         renderizarTabela(data);
       } catch (err) {
-        console.warn('Erro ao conectar na API local:', err);
-        status.textContent = '● Servidor offline (exibindo amostra)';
-        status.style.color = '#f59e0b';
-
-        // Mock de demonstração caso a API não esteja rodando de imediato
-        const mock = {
-          resumo: { totalInscritos: 55, mediaIdade: 33.4 },
-          faixasEtarias: [
-            { faixa: '18 a 20', total: 1 },
-            { faixa: '21 a 25', total: 6 },
-            { faixa: '26 a 30', total: 8 },
-            { faixa: '31 a 35', total: 19 },
-            { faixa: '36+', total: 21 }
-          ],
-          estados: [
-            { estado: 'PR', total: 53, mediaIdade: 33.5 },
-            { estado: 'GO', total: 1, mediaIdade: 25.0 },
-            { estado: 'SP', total: 1, mediaIdade: 32.0 }
-          ],
-          sexo: [
-            { sexo: 'Masculino', total: 50 },
-            { sexo: 'Feminino', total: 5 }
-          ],
-          etnicoRacial: [
-            { raca: 'Branca', total: 36 },
-            { raca: 'Parda', total: 17 },
-            { raca: 'Preta', total: 2 }
-          ]
-        };
-        atualizarKPIs(mock);
-        renderizarGraficos(mock);
-        renderizarTabela(mock);
+        console.error('Falha na sincronização:', err);
+        status.textContent = '● Falha na API: ' + err.message;
+        status.style.color = '#ef4444';
       }
     }
 
     function atualizarKPIs(data) {
-      document.getElementById('kpi-total').textContent = data.resumo.totalInscritos || 0;
-      document.getElementById('kpi-idade').textContent = (data.resumo.mediaIdade || 0) + ' anos';
-      document.getElementById('kpi-estados').textContent = data.estados.length;
+      document.getElementById('kpi-total').textContent = data.resumo?.totalInscritos ?? 0;
+      document.getElementById('kpi-idade').textContent = (data.resumo?.mediaIdade ?? 0) + ' anos';
+      document.getElementById('kpi-estados').textContent = data.estados?.length ?? 0;
       
-      const topRaca = data.etnicoRacial[0];
+      const topRaca = data.etnicoRacial && data.etnicoRacial.length > 0 ? data.etnicoRacial[0] : null;
       document.getElementById('kpi-top-raca').textContent = topRaca ? `${topRaca.raca} (${topRaca.total})` : '-';
     }
 
+    function criarOuAtualizarChart(id, config) {
+      if (chartInstances[id]) {
+        chartInstances[id].destroy();
+      }
+      const canvas = document.getElementById(id);
+      if (canvas) {
+        chartInstances[id] = new Chart(canvas, config);
+      }
+    }
+
     function renderizarGraficos(data) {
-      // 1. Sexo (Doughnut)
-      new Chart(document.getElementById('chartSexo'), {
+      // 1. Sexo
+      criarOuAtualizarChart('chartSexo', {
         type: 'doughnut',
         data: {
-          labels: data.sexo.map(s => s.sexo),
+          labels: (data.sexo || []).map(s => s.sexo),
           datasets: [{
-            data: data.sexo.map(s => s.total),
-            backgroundColor: ['#3b82f6', '#ec4899', '#94a3b8'],
+            data: (data.sexo || []).map(s => s.total),
+            backgroundColor: ['#3b82f6', '#ec4899', '#94a3b8', '#10b981'],
             borderWidth: 0
           }]
         },
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // 2. Faixa Etária (Barra Vertical)
-      new Chart(document.getElementById('chartIdade'), {
+      // 2. Faixa Etária
+      criarOuAtualizarChart('chartIdade', {
         type: 'bar',
         data: {
-          labels: data.faixasEtarias.map(f => f.faixa),
+          labels: (data.faixasEtarias || []).map(f => f.faixa),
           datasets: [{
             label: 'Inscritos',
-            data: data.faixasEtarias.map(f => f.total),
+            data: (data.faixasEtarias || []).map(f => f.total),
             backgroundColor: '#10b981',
             borderRadius: 6
           }]
@@ -295,13 +282,13 @@
         }
       });
 
-      // 3. Étnico-Racial (Barra Horizontal / Polar)
-      new Chart(document.getElementById('chartEtnico'), {
+      // 3. Étnico-Racial
+      criarOuAtualizarChart('chartEtnico', {
         type: 'doughnut',
         data: {
-          labels: data.etnicoRacial.map(r => r.raca),
+          labels: (data.etnicoRacial || []).map(r => r.raca),
           datasets: [{
-            data: data.etnicoRacial.map(r => r.total),
+            data: (data.etnicoRacial || []).map(r => r.total),
             backgroundColor: ['#f59e0b', '#8b5cf6', '#06b6d4', '#64748b'],
             borderWidth: 0
           }]
@@ -309,14 +296,14 @@
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // 4. Estados (Barra Horizontal)
-      new Chart(document.getElementById('chartEstados'), {
+      // 4. Estados
+      criarOuAtualizarChart('chartEstados', {
         type: 'bar',
         data: {
-          labels: data.estados.map(e => e.estado),
+          labels: (data.estados || []).map(e => e.estado),
           datasets: [{
             label: 'Total por UF',
-            data: data.estados.map(e => e.total),
+            data: (data.estados || []).map(e => e.total),
             backgroundColor: '#3b82f6',
             borderRadius: 4
           }]
@@ -337,7 +324,12 @@
     function renderizarTabela(data) {
       const tbody = document.getElementById('tabela-estados');
       tbody.innerHTML = '';
-      const totalGeral = data.resumo.totalInscritos || 1;
+      const totalGeral = data.resumo?.totalInscritos || 1;
+
+      if (!data.estados || data.estados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Nenhum registro encontrado no banco.</td></tr>';
+        return;
+      }
 
       data.estados.forEach(item => {
         const perc = ((item.total / totalGeral) * 100).toFixed(1);
@@ -352,7 +344,11 @@
       });
     }
 
-    window.onload = carregarDashboard;
+    // Carrega ao iniciar e atualiza automaticamente a cada 10 segundos
+    window.onload = () => {
+      carregarDashboard();
+      setInterval(carregarDashboard, 10000);
+    };
   </script>
 </body>
 </html>
