@@ -136,7 +136,7 @@
   <header>
     <div>
       <h1 style="font-size: 1.6rem; font-weight: 700;">Dashboard de Inscritos</h1>
-      <p style="color: var(--text-muted); font-size: 0.9rem;">Visão demográfica conectada ao Render (<code>crsbm</code>)</p>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Conectado ao serviço de API (<code>cbm-palz</code>)</p>
     </div>
     <div class="header-actions">
       <button class="btn-refresh" onclick="carregarDashboard()">↻ Atualizar</button>
@@ -144,7 +144,6 @@
     </div>
   </header>
 
-  <!-- Métricas Rápidas -->
   <section class="kpis">
     <div class="kpi-card">
       <div class="label">Total de Inscritos</div>
@@ -164,7 +163,6 @@
     </div>
   </section>
 
-  <!-- Gráficos -->
   <section class="grid-charts">
     <div class="card-chart">
       <h3>Distribuição por Sexo</h3>
@@ -195,7 +193,6 @@
     </div>
   </section>
 
-  <!-- Tabela Detalhada por Estado -->
   <section class="table-card">
     <h3 style="font-size: 0.95rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;">
       Detalhamento Geográfico e Médias de Idade
@@ -216,10 +213,8 @@
   </section>
 
   <script>
-    // URL apontando para o Render crsbm
-    const API_URL = (window.location.hostname.includes('onrender.com'))
-      ? '/api/dashboard'
-      : 'https://crsbm.onrender.com/api/dashboard';
+    // Aponta diretamente para o Web Service Node (cbm)
+    const API_URL = 'https://cbm-palz.onrender.com/api/dashboard';
 
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, sans-serif';
@@ -238,7 +233,7 @@
         }
         const data = await res.json();
 
-        status.textContent = '● Online (Render crsbm)';
+        status.textContent = '● Conectado (cbm-palz)';
         status.style.color = '#10b981';
 
         atualizarKPIs(data);
@@ -271,7 +266,6 @@
     }
 
     function renderizarGraficos(data) {
-      // 1. Sexo
       criarOuAtualizarChart('chartSexo', {
         type: 'doughnut',
         data: {
@@ -285,7 +279,6 @@
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // 2. Faixa Etária
       criarOuAtualizarChart('chartIdade', {
         type: 'bar',
         data: {
@@ -308,7 +301,6 @@
         }
       });
 
-      // 3. Étnico-Racial
       criarOuAtualizarChart('chartEtnico', {
         type: 'doughnut',
         data: {
@@ -322,7 +314,6 @@
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // 4. Estados
       criarOuAtualizarChart('chartEstados', {
         type: 'bar',
         data: {
@@ -372,7 +363,6 @@
 
     window.onload = () => {
       carregarDashboard();
-      // Atualização periódica automática a cada 15 segundos
       setInterval(carregarDashboard, 15000);
     };
   </script>
