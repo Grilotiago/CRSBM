@@ -14,7 +14,6 @@
       --primary: #3b82f6;
       --secondary: #10b981;
       --accent: #f59e0b;
-      --purple: #8b5cf6;
       --border: #334155;
     }
 
@@ -116,6 +115,15 @@
       overflow-x: auto;
     }
 
+    .table-header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -129,6 +137,21 @@
     }
 
     th { color: var(--text-muted); font-weight: 600; }
+
+    .bar-container {
+      background: #334155;
+      border-radius: 4px;
+      height: 8px;
+      width: 100%;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .bar-fill {
+      background: var(--accent);
+      height: 100%;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -144,7 +167,7 @@
     </div>
   </header>
 
-  <!-- KPIs -->
+  <!-- Métricas Rápidas -->
   <section class="kpis">
     <div class="kpi-card">
       <div class="label">Total de Inscritos</div>
@@ -164,7 +187,7 @@
     </div>
   </section>
 
-  <!-- Gráficos -->
+  <!-- Gráficos Principais (3 Cards) -->
   <section class="grid-charts">
     <div class="card-chart">
       <h3>Distribuição por Sexo</h3>
@@ -180,42 +203,45 @@
       </div>
     </div>
 
+    <!-- Posição Trocada: Agora os Estados (UF) estão aqui no Grid -->
     <div class="card-chart">
-      <h3>Inscritos por Município (PR)</h3>
-      <div class="chart-container">
-        <canvas id="chartCidadesPR"></canvas>
-      </div>
-    </div>
-
-    <div class="card-chart">
-      <h3>Inscritos por Estado (UF)</h3>
+      <h3>Distribuição por Estado (UF)</h3>
       <div class="chart-container">
         <canvas id="chartEstados"></canvas>
       </div>
     </div>
   </section>
 
-  <!-- Tabela Resumo -->
+  <!-- Posição Trocada: Detalhamento por Município do PR agora na seção Ampla Inferior -->
   <section class="table-card">
-    <h3 style="font-size: 0.95rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;">
-      Detalhamento Geográfico por Estado (UF)
-    </h3>
+    <div class="table-header-flex">
+      <div>
+        <h3 style="font-size: 1rem; text-transform: uppercase; color: var(--accent); letter-spacing: 0.5px;">
+          Inscritos por Município (Paraná - PR)
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
+          Distribuição dos candidatos residentes no estado do Paraná
+        </p>
+      </div>
+      <span id="badge-total-pr" class="badge" style="color: var(--accent); border-color: var(--accent);">0 inscritos no PR</span>
+    </div>
+
     <table>
       <thead>
         <tr>
-          <th>Estado (UF)</th>
-          <th>Total de Candidatos</th>
-          <th>Participação (%)</th>
-          <th>Média de Idade</th>
+          <th style="width: 40%;">Município</th>
+          <th style="width: 20%;">Total de Candidatos</th>
+          <th style="width: 40%;">Participação no PR (%)</th>
         </tr>
       </thead>
-      <tbody id="tabela-estados">
-        <tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Aguardando dados...</td></tr>
+      <tbody id="tabela-municipios-pr">
+        <tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Aguardando dados...</td></tr>
       </tbody>
     </table>
   </section>
 
   <script>
+    // URL apontando para a API no Render
     const API_URL = 'https://cbm-palz.onrender.com/api/dashboard';
 
     Chart.defaults.color = '#94a3b8';
@@ -240,10 +266,10 @@
 
         atualizarKPIs(data);
         renderizarGraficos(data);
-        renderizarTabela(data);
+        renderizarTabelaMunicipiosPR(data);
       } catch (err) {
         console.error('Falha de conexão com a API:', err);
-        status.textContent = '● Erro ao carregar dados';
+        status.textContent = '● Servidor inicializando (aguarde 30s)...';
         status.style.color = '#ef4444';
       }
     }
@@ -255,25 +281,23 @@
       
       const listaCidades = data.cidadesPR || data.cidades || [];
       const topCidade = listaCidades.length > 0 ? listaCidades[0] : null;
-      document.getElementById('kpi-top-cidade').textContent = topCidade ? `${topCidade.cidade || topCidade.municipio} (${topCidade.total})` : '-';
+      document.getElementById('kpi-top-cidade').textContent = topCidade 
+        ? `${topCidade.cidade || topCidade.municipio} (${topCidade.total})` 
+        : '-';
     }
 
     function criarOuAtualizarChart(id, config) {
       if (chartInstances[id]) {
         chartInstances[id].destroy();
       }
-      let canvas = document.getElementById(id);
-      // Fallback caso o canvas ainda esteja com o ID antigo
-      if (!canvas && id === 'chartCidadesPR') {
-        canvas = document.getElementById('chartEtnico');
-      }
+      const canvas = document.getElementById(id);
       if (canvas) {
         chartInstances[id] = new Chart(canvas, config);
       }
     }
 
     function renderizarGraficos(data) {
-      // 1. Sexo
+      // 1. Gráfico de Sexo
       criarOuAtualizarChart('chartSexo', {
         type: 'doughnut',
         data: {
@@ -287,7 +311,7 @@
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // 2. Faixa Etária
+      // 2. Gráfico de Faixa Etária
       criarOuAtualizarChart('chartIdade', {
         type: 'bar',
         data: {
@@ -310,16 +334,15 @@
         }
       });
 
-      // 3. Municípios do Paraná (PR) - Leitura flexível
-      const cidades = data.cidadesPR || data.cidades || [];
-      criarOuAtualizarChart('chartCidadesPR', {
+      // 3. Gráfico de Estados (UF) - Agora no Grid
+      criarOuAtualizarChart('chartEstados', {
         type: 'bar',
         data: {
-          labels: cidades.map(c => c.cidade || c.municipio || 'Não Informado'),
+          labels: (data.estados || []).map(e => e.estado),
           datasets: [{
-            label: 'Inscritos',
-            data: cidades.map(c => c.total),
-            backgroundColor: '#f59e0b',
+            label: 'Total por UF',
+            data: (data.estados || []).map(e => e.total),
+            backgroundColor: '#3b82f6',
             borderRadius: 4
           }]
         },
@@ -338,50 +361,40 @@
           }
         }
       });
-
-      // 4. Estados
-      criarOuAtualizarChart('chartEstados', {
-        type: 'bar',
-        data: {
-          labels: (data.estados || []).map(e => e.estado),
-          datasets: [{
-            label: 'Total por UF',
-            data: (data.estados || []).map(e => e.total),
-            backgroundColor: '#3b82f6',
-            borderRadius: 4
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { beginAtZero: true, grid: { color: '#334155' } },
-            y: { grid: { display: false } }
-          }
-        }
-      });
     }
 
-    function renderizarTabela(data) {
-      const tbody = document.getElementById('tabela-estados');
+    // Renderiza a tabela de Municípios do Paraná na parte inferior
+    function renderizarTabelaMunicipiosPR(data) {
+      const tbody = document.getElementById('tabela-municipios-pr');
       tbody.innerHTML = '';
-      const totalGeral = data.resumo?.totalInscritos || 1;
 
-      if (!data.estados || data.estados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Nenhum candidato encontrado.</td></tr>';
+      const lista = data.cidadesPR || data.cidades || [];
+      const totalPR = lista.reduce((acc, curr) => acc + Number(curr.total || 0), 0);
+      
+      document.getElementById('badge-total-pr').textContent = `${totalPR} inscritos no PR`;
+
+      if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Nenhum candidato do Paraná encontrado.</td></tr>';
         return;
       }
 
-      data.estados.forEach(item => {
-        const perc = ((item.total / totalGeral) * 100).toFixed(1);
+      lista.forEach(item => {
+        const nomeCidade = item.cidade || item.municipio || 'Não Informado';
+        const total = Number(item.total);
+        const perc = totalPR > 0 ? ((total / totalPR) * 100).toFixed(1) : 0;
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td style="font-weight: 600; color: #f8fafc;">${item.estado}</td>
-          <td>${item.total}</td>
-          <td>${perc}%</td>
-          <td>${item.mediaIdade ? item.mediaIdade + ' anos' : 'N/I'}</td>
+          <td style="font-weight: 600; color: #f8fafc;">${nomeCidade}</td>
+          <td style="font-weight: 700; color: var(--accent); font-size: 1rem;">${total}</td>
+          <td>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+              <span>${perc}%</span>
+            </div>
+            <div class="bar-container">
+              <div class="bar-fill" style="width: ${perc}%;"></div>
+            </div>
+          </td>
         `;
         tbody.appendChild(tr);
       });
