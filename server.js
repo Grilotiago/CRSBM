@@ -187,59 +187,62 @@ app.put('/api/candidatos/:id', async (req, res) => {
   }
 });
 
-// ROTA PARA O DASHBOARD DEMOGRÁFICO
+// ROTA DO DASHBOARD (Consulta direta à tabela 'candidato')
 app.get('/api/dashboard', async (req, res) => {
   try {
-    // 1. Métricas Gerais (Total e Média de Idade)
-    const [geral] = await pool.query(`
+    // 1. Total e Média de Idade
+    const [resumoRows] = await pool.query(`
       SELECT 
         COUNT(*) AS totalInscritos,
-        ROUND(AVG(TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE())), 1) AS mediaIdade
+        COALESCE(ROUND(AVG(TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE())), 1), 0) AS mediaIdade
       FROM candidato
     `);
 
-    // 2. Distribuição por Faixa Etária
-    const [faixasEtarias] = await pool.query(`
+    // 2. Faixas Etárias
+    const [faixasRows] = await pool.query(`
       SELECT 
-        CASE 
-          WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) < 21 THEN '18 a 20'
-          WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) BETWEEN 21 AND 25 THEN '21 a 25'
-          WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) BETWEEN 26 AND 30 THEN '26 a 30'
-          WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) BETWEEN 31 AND 35 THEN '31 a 35'
-          ELSE '36+'
-        END AS faixa,
-        COUNT(*) AS total
-      FROM candidato
-      WHERE data_nascimento IS NOT NULL
+        faixa, COUNT(*) AS total
+      FROM (
+        SELECT 
+          CASE 
+            WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) < 21 THEN '18 a 20'
+            WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) BETWEEN 21 AND 25 THEN '21 a 25'
+            WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) BETWEEN 26 AND 30 THEN '26 a 30'
+            WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) BETWEEN 31 AND 35 THEN '31 a 35'
+            ELSE '36+'
+          END AS faixa
+        FROM candidato
+        WHERE data_nascimento IS NOT NULL
+      ) t
       GROUP BY faixa
       ORDER BY FIELD(faixa, '18 a 20', '21 a 25', '26 a 30', '31 a 35', '36+')
     `);
 
-    // 3. Distribuição por Estado (UF)
-    const [estados] = await pool.query(`
+    // 3. Estados
+    const [estadosRows] = await pool.query(`
       SELECT 
-        COALESCE(NULLIF(TRIM(estado), ''), 'Não Informado') AS estado,
+        COALESCE(NULLIF(TRIM(estado), ''), 'N/I') AS estado,
         COUNT(*) AS total,
-        ROUND(AVG(TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE())), 1) AS mediaIdade
+        COALESCE(ROUND(AVG(TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE())), 1), 0) AS mediaIdade
       FROM candidato
       GROUP BY estado
       ORDER BY total DESC
     `);
 
-    // 4. Distribuição por Sexo
-    const [sexo] = await pool.query(`
+    // 4. Sexo
+    const [sexoRows] = await pool.query(`
       SELECT 
-        COALESCE(NULLIF(TRIM(sexo), ''), 'Não Informado') AS sexo,
+        COALESCE(NULLIF(TRIM(sexo), ''), 'N/I') AS sexo,
         COUNT(*) AS total
       FROM candidato
       GROUP BY sexo
       ORDER BY total DESC
     `);
 
-    // 5. Declaração Étnico-Racial
-    const [etnicoRacial] = await pool.query(`
+    // 5. Étnico-Racial
+    const [etnicoRows] = await pool.query(`
       SELECT 
-        COALESCE(NULLIF(TRIM(declaracao_etnico_racial), ''), 'Não Informado') AS raca,
+        COALESCE(NULLIF(TRIM(declaracao_etnico_racial), ''), 'N/I') AS raca,
         COUNT(*) AS total
       FROM candidato
       GROUP BY declaracao_etnico_racial
@@ -247,18 +250,17 @@ app.get('/api/dashboard', async (req, res) => {
     `);
 
     res.json({
-      resumo: geral[0],
-      faixasEtarias,
-      estados,
-      sexo,
-      etnicoRacial
+      resumo: resumoRows[0] || { totalInscritos: 0, mediaIdade: 0 },
+      faixasEtarias: faixasRows,
+      estados: estadosRows,
+      sexo: sexoRows,
+      etnicoRacial: etnicoRows
     });
   } catch (err) {
-    console.error('Erro ao consultar métricas do dashboard:', err);
-    res.status(500).json({ error: 'Erro interno ao consultar dashboard.' });
+    console.error('Erro ao consultar /api/dashboard:', err);
+    res.status(500).json({ error: 'Erro interno no dashboard', detail: err.message });
   }
 });
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
